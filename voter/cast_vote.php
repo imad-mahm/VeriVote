@@ -3,6 +3,11 @@ declare(strict_types=1);
 
 require_once dirname(__DIR__) . '/includes/bootstrap.php';
 
+require_login();
+if (!has_role(['voter', 'super_admin'])) {
+    redirect(dashboard_home_for_role((string) current_role_slug()));
+}
+
 $eventId = (int) ($_GET['event'] ?? $_POST['event_id'] ?? 0);
 $event = $eventId > 0 ? fetch_event_by_id($eventId) : null;
 $validatedToken = null;
@@ -85,36 +90,47 @@ include dirname(__DIR__) . '/includes/header.php';
 ?>
 <?php if (!$event): ?>
     <section class="panel">
-        <span class="eyebrow">Active Elections</span>
-        <h2>Select an event before entering your token</h2>
-        <div class="grid-cards">
-            <?php foreach ($activeEvents as $active): ?>
-                <article class="card">
-                    <h3><?= e($active['title']); ?></h3>
-                    <p><?= e($active['description']); ?></p>
-                    <a class="button button--primary" href="<?= e(base_url('/voter/cast_vote.php?event=' . $active['id'])); ?>">Open ballot</a>
-                </article>
-            <?php endforeach; ?>
-        </div>
+        <span class="eyebrow">Active elections</span>
+        <h2>Select an event</h2>
+        <p>Choose the election you're voting in before entering your token.</p>
+        <?php if (!$activeEvents): ?>
+            <div class="alert alert--info">No active elections right now.</div>
+        <?php else: ?>
+            <div class="event-rows" style="margin-top:8px;">
+                <?php foreach ($activeEvents as $active): ?>
+                    <div class="event-row">
+                        <div>
+                            <strong><?= e($active['title']); ?></strong>
+                            <p style="margin-top:4px; font-size:0.88rem;"><?= e($active['description']); ?></p>
+                        </div>
+                        <a class="button button--primary" href="<?= e(base_url('/voter/cast_vote.php?event=' . $active['id'])); ?>">Open ballot</a>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+        <?php endif; ?>
     </section>
 <?php elseif ($receiptResult): ?>
     <section class="panel">
-        <span class="eyebrow">Ballot Recorded</span>
-        <h2>Your vote has been submitted</h2>
+        <span class="eyebrow">Ballot recorded</span>
+        <h2>Vote submitted</h2>
         <div class="alert alert--success">
             Your selection for <strong><?= e($receiptResult['option']); ?></strong> was recorded successfully.
         </div>
-        <div class="card">
-            <strong>Private receipt</strong>
-            <p>Keep this receipt secure. It is the only value you can use later to personally verify your vote.</p>
-            <div class="inline-actions">
-                <span class="badge badge-success"><?= e($receiptResult['receipt']); ?></span>
-                <button class="button button--ghost" type="button" data-copy="<?= e($receiptResult['receipt']); ?>">Copy</button>
-            </div>
-        </div>
-        <div class="card">
-            <strong>Public audit reference</strong>
-            <p><?= e($receiptResult['receipt_public_hash']); ?></p>
+        <div class="def-list" style="margin-top:8px;">
+            <dl>
+                <div class="def-row">
+                    <dt>Private receipt</dt>
+                    <dd>
+                        <span style="font-family:ui-monospace,monospace;font-size:0.85rem;word-break:break-all;"><?= e($receiptResult['receipt']); ?></span>
+                        <button class="button button--ghost" type="button" data-copy="<?= e($receiptResult['receipt']); ?>" style="margin-top:8px;min-height:32px;padding:0 12px;font-size:0.82rem;">Copy</button>
+                        <p style="margin-top:6px;">Keep this secure. It is the only value you can use to verify your vote later.</p>
+                    </dd>
+                </div>
+                <div class="def-row">
+                    <dt>Public reference</dt>
+                    <dd style="font-family:ui-monospace,monospace;font-size:0.78rem;word-break:break-all;"><?= e($receiptResult['receipt_public_hash']); ?></dd>
+                </div>
+            </dl>
         </div>
     </section>
 <?php elseif ($validatedToken): ?>

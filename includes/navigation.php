@@ -6,7 +6,7 @@ $viewer = current_user();
 <header class="topbar">
     <div class="topbar__inner">
         <a class="brand" href="<?= e(base_url('/')); ?>">
-            <img src="<?= e(base_url('/assets/images/logo-mark.svg')); ?>" alt="Verivote logo">
+            <img src="<?= e(base_url('/assets/images/logo-mark.svg')); ?>" alt="Verivote">
             <span>Verivote</span>
         </a>
 
@@ -16,16 +16,14 @@ $viewer = current_user();
         </button>
 
         <nav class="topnav" data-nav-menu>
-            <a class="<?= $activeNav === 'home' ? 'is-active' : ''; ?>" href="<?= e(base_url('/')); ?>">Home</a>
-            <a class="<?= $activeNav === 'events' ? 'is-active' : ''; ?>" href="<?= e(base_url('/events.php')); ?>">Events</a>
-            <a class="<?= $activeNav === 'results' ? 'is-active' : ''; ?>" href="<?= e(base_url('/results.php')); ?>">Results</a>
-            <a class="<?= $activeNav === 'audit' ? 'is-active' : ''; ?>" href="<?= e(base_url('/audit.php')); ?>">Audit</a>
+            <a class="<?= $activeNav === 'home'   ? 'is-active' : ''; ?>" href="<?= e(base_url('/')); ?>">Home</a>
+            <a class="<?= $activeNav === 'events' ? 'is-active' : ''; ?>" href="<?= e(base_url('/events.php')); ?>">Elections</a>
             <?php if ($viewer): ?>
                 <a class="<?= $activeNav === 'dashboard' ? 'is-active' : ''; ?>" href="<?= e(base_url(dashboard_home_for_role($viewer['role_slug']))); ?>">Dashboard</a>
-                <a class="button button--ghost" href="<?= e(base_url('/auth/logout.php')); ?>">Sign out</a>
+                <a class="button button--ghost" style="min-height:36px;padding:0 14px;font-size:0.85rem;" href="<?= e(base_url('/auth/logout.php')); ?>">Sign out</a>
             <?php else: ?>
                 <a class="<?= $activeNav === 'login' ? 'is-active' : ''; ?>" href="<?= e(base_url('/auth/login.php')); ?>">Log in</a>
-                <a class="button button--primary" href="<?= e(base_url('/auth/register.php')); ?>">Create account</a>
+                <a class="button button--primary" style="min-height:36px;padding:0 16px;font-size:0.85rem;" href="<?= e(base_url('/auth/register.php')); ?>">Create account</a>
             <?php endif; ?>
         </nav>
     </div>

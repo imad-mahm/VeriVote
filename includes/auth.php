@@ -198,8 +198,8 @@ function attempt_login(string $identifier, string $password): bool
     $limit = consume_rate_limit(
         'login',
         $rateLimitSubject,
-        (int) app_config('security.login_attempts'),
-        (int) app_config('security.login_window_seconds')
+        get_site_setting('max_login_attempts', (int) app_config('security.login_attempts')),
+        get_site_setting('login_lockout_window_minutes', 15) * 60
     );
 
     if (!$limit['allowed']) {

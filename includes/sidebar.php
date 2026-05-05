@@ -8,6 +8,7 @@ $links = match ($role) {
         ['label' => 'Overview', 'path' => '/admin/dashboard.php', 'slug' => 'admin-dashboard'],
         ['label' => 'Privileged Users', 'path' => '/admin/users.php', 'slug' => 'admin-users'],
         ['label' => 'Audit Trail', 'path' => '/admin/audits.php', 'slug' => 'admin-audits'],
+        ['label' => 'Configuration', 'path' => '/admin/config.php', 'slug' => 'admin-config'],
         ['label' => 'Test Settings', 'path' => '/admin/settings.php', 'slug' => 'admin-settings'],
     ],
     'event_creator' => [

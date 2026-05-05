@@ -3,33 +3,6 @@ document.addEventListener('DOMContentLoaded', function () {
     const navToggle = document.querySelector('[data-nav-toggle]');
     const navMenu = document.querySelector('[data-nav-menu]');
 
-    // Global cursor glow — follows the mouse across the entire page
-    var cursorGlow = document.createElement('div');
-    cursorGlow.className = 'cursor-glow';
-    document.body.insertBefore(cursorGlow, document.body.firstChild);
-    var half = 350; // half of 700px element
-    document.addEventListener('mousemove', function (e) {
-        cursorGlow.style.transform = 'translate(' + (e.clientX - half) + 'px, ' + (e.clientY - half) + 'px)';
-        if (!cursorGlow.classList.contains('is-active')) {
-            cursorGlow.classList.add('is-active');
-        }
-    }, { passive: true });
-    document.addEventListener('mouseleave', function () {
-        cursorGlow.classList.remove('is-active');
-    });
-    document.addEventListener('mouseenter', function () {
-        cursorGlow.classList.add('is-active');
-    });
-
-    // Panel cursor spotlight — update --mx / --my on each panel
-    document.querySelectorAll('.panel').forEach(function (panel) {
-        panel.addEventListener('mousemove', function (e) {
-            const rect = panel.getBoundingClientRect();
-            panel.style.setProperty('--mx', (e.clientX - rect.left) + 'px');
-            panel.style.setProperty('--my', (e.clientY - rect.top) + 'px');
-        });
-    });
-
     // Stagger — observe [data-stagger] containers; assign --stagger-i to each child
     const staggerObserver = new IntersectionObserver(function (entries) {
         entries.forEach(function (entry) {

@@ -13,11 +13,12 @@ declare(strict_types=1);
                 <p>Secure. Verifiable. Privacy-preserving.</p>
             </div>
             <div class="site-footer__links">
-                <a href="<?= e(base_url('/events.php')); ?>">Events</a>
-                <a href="<?= e(base_url('/results.php')); ?>">Results</a>
-                <a href="<?= e(base_url('/audit.php')); ?>">Audit</a>
+                <a href="<?= e(base_url('/events.php')); ?>">Elections</a>
+                <a href="<?= e(base_url('/auth/login.php')); ?>">Log in</a>
+                <a href="<?= e(base_url('/auth/register.php')); ?>">Register</a>
             </div>
         </div>
+        <div class="footer-colophon" aria-hidden="true">Verivote</div>
     </footer>
 <?php endif; ?>
 <script src="<?= e(base_url('/assets/js/app.js')); ?>" defer></script>

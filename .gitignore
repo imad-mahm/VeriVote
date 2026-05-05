@@ -21,3 +21,5 @@ uploads/photos/*
 uploads/documents/*
 !uploads/photos/.gitkeep
 !uploads/documents/.gitkeep
+DESIGN.md
+PRODUCT.md

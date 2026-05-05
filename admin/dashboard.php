@@ -36,24 +36,24 @@ $activeSidebar = 'admin-dashboard';
 
 include dirname(__DIR__) . '/includes/header.php';
 ?>
-<section class="stats-grid">
-    <article class="stat-box">
+<div class="stat-strip">
+    <div class="stat-strip__item">
         <strong><?= e((string) $stats['users']); ?></strong>
-        <p>Total user accounts</p>
-    </article>
-    <article class="stat-box">
+        <p>User accounts</p>
+    </div>
+    <div class="stat-strip__item">
         <strong><?= e((string) $stats['events']); ?></strong>
-        <p>Total events</p>
-    </article>
-    <article class="stat-box">
+        <p>Events</p>
+    </div>
+    <div class="stat-strip__item">
         <strong><?= e((string) $stats['pending_verifications']); ?></strong>
-        <p>Pending verification steps</p>
-    </article>
-    <article class="stat-box">
+        <p>Pending verifications</p>
+    </div>
+    <div class="stat-strip__item">
         <strong><?= e((string) $stats['ballots']); ?></strong>
         <p>Recorded ballots</p>
-    </article>
-</section>
+    </div>
+</div>
 
 <section class="grid-2">
     <article class="table-wrap">

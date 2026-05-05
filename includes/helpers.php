@@ -1197,16 +1197,24 @@ function send_account_phone_verification_code(array $user): array
         throw new RuntimeException('A valid phone number is required for account verification.');
     }
 
-    $code = random_numeric_code(6);
+    // Resolve email — may not be in the $user array passed from registration flow
+    $email = (string) ($user['email'] ?? '');
+    if ($email === '') {
+        $row = fetch_one('SELECT email FROM users WHERE id = :id', ['id' => $user['id']]);
+        $email = (string) ($row['email'] ?? '');
+    }
+
+    $expiryMinutes = (int) get_site_setting('verification_code_expiry_minutes', (int) app_config('security.verification_code_expiry_minutes'));
+    $code      = random_numeric_code(6);
     $expiresAt = (new DateTimeImmutable('now'))
-        ->modify('+' . (int) app_config('security.verification_code_expiry_minutes') . ' minutes')
+        ->modify('+' . $expiryMinutes . ' minutes')
         ->format('Y-m-d H:i:s');
 
     execute_statement(
         'INSERT INTO verification_codes (user_id, purpose, destination, code_hash, expires_at)
          VALUES (:user_id, "account_phone", :destination, :code_hash, :expires_at)',
         [
-            'user_id' => $user['id'],
+            'user_id'   => $user['id'],
             'destination' => $phone,
             'code_hash' => hash_code_value($code),
             'expires_at' => $expiresAt,
@@ -1224,16 +1232,37 @@ function send_account_phone_verification_code(array $user): array
     );
 
     if (!$smsResult['success']) {
-        $providerCode = (string) ($smsResult['provider_code'] ?? '');
+        $providerCode    = (string) ($smsResult['provider_code'] ?? '');
         $providerMessage = (string) ($smsResult['provider_message'] ?? '');
-        $detail = trim($providerCode . ' ' . $providerMessage);
+        $detail          = trim($providerCode . ' ' . $providerMessage);
         throw new RuntimeException(
             'Could not send account verification code by SMS.'
             . ($detail !== '' ? ' Provider response: ' . $detail . '.' : '')
         );
     }
 
-    return ['code' => $code, 'expires_at' => $expiresAt, 'sms' => $smsResult];
+    // Also send via email (best-effort — SMS already succeeded)
+    $emailResult = null;
+    if ($email !== '' && filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $emailBody = "Your Verivote account verification code is: {$code}\n\n"
+            . "This code expires in {$expiryMinutes} minutes. Enter it on the phone verification page.\n\n"
+            . "If you did not register for a Verivote account, you can safely ignore this message.";
+        try {
+            $emailResult = send_email_notification(
+                (int) $user['id'],
+                null,
+                $email,
+                "Verivote verification code: {$code}",
+                $emailBody,
+                $code,
+                ['purpose' => 'account_phone']
+            );
+        } catch (Throwable) {
+            // Email is secondary — do not fail if it cannot be delivered
+        }
+    }
+
+    return ['code' => $code, 'expires_at' => $expiresAt, 'sms' => $smsResult, 'email' => $emailResult];
 }
 
 function revoke_voting_token(int $tokenId, int $actorId): void
@@ -1474,4 +1503,56 @@ function dashboard_home_for_role(string $roleSlug): string
         'verifier' => '/verifier/dashboard.php',
         default => '/voter/dashboard.php',
     };
+}
+
+function get_site_setting(string $key, mixed $default = null): mixed
+{
+    static $cache = [];
+    static $loaded = false;
+
+    if (!$loaded) {
+        try {
+            $rows = fetch_all('SELECT setting_key, setting_value, setting_type FROM site_settings');
+            foreach ($rows as $row) {
+                $cache[$row['setting_key']] = match ($row['setting_type']) {
+                    'integer' => (int) $row['setting_value'],
+                    'boolean' => (bool) (int) $row['setting_value'],
+                    default   => (string) $row['setting_value'],
+                };
+            }
+        } catch (Throwable) {
+            // Table may not exist before migration is run
+        }
+        $loaded = true;
+    }
+
+    return $cache[$key] ?? $default;
+}
+
+function set_site_setting(string $key, string $value): void
+{
+    execute_statement(
+        'INSERT INTO site_settings (setting_key, setting_value)
+         VALUES (:key, :val)
+         ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)',
+        ['key' => $key, 'val' => $value]
+    );
+}
+
+function get_all_site_settings(): array
+{
+    try {
+        $rows = fetch_all('SELECT * FROM site_settings ORDER BY category, setting_key');
+        $result = [];
+        foreach ($rows as $row) {
+            $result[$row['setting_key']] = match ($row['setting_type']) {
+                'integer' => (int) $row['setting_value'],
+                'boolean' => (bool) (int) $row['setting_value'],
+                default   => (string) $row['setting_value'],
+            };
+        }
+        return $result;
+    } catch (Throwable) {
+        return [];
+    }
 }

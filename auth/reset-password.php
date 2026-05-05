@@ -95,34 +95,32 @@ if (is_post_request()) {
     flash_errors($errors);
 }
 
-$pageTitle = 'Reset Password';
+$pageTitle       = 'Reset Password';
 $pageDescription = 'Set a new password for your Verivote account.';
 
 include dirname(__DIR__) . '/includes/header.php';
 ?>
-<section class="section">
-    <article class="panel" data-reveal>
-        <span class="eyebrow">Password Reset</span>
+<div class="form-page" data-reveal>
+    <div class="form-page__header">
+        <span class="eyebrow">Password reset</span>
         <h1>Choose a new password</h1>
-        <?php if (!$record || new DateTimeImmutable($record['expires_at']) < new DateTimeImmutable('now')): ?>
-            <div class="alert alert--error">This reset link is invalid or expired.</div>
-        <?php else: ?>
-            <form method="post" class="form-grid">
-                <?= csrf_field(); ?>
-                <input type="hidden" name="token" value="<?= e($token); ?>">
-                <div class="field">
-                    <label for="password">New password</label>
-                    <input id="password" type="password" name="password" required>
-                </div>
-                <div class="field">
-                    <label for="password_confirmation">Confirm new password</label>
-                    <input id="password_confirmation" type="password" name="password_confirmation" required>
-                </div>
-                <div class="field field--full">
-                    <button class="button button--primary" type="submit">Update password</button>
-                </div>
-            </form>
-        <?php endif; ?>
-    </article>
-</section>
+    </div>
+    <?php if (!$record || new DateTimeImmutable($record['expires_at']) < new DateTimeImmutable('now')): ?>
+        <div class="alert alert--error">This reset link is invalid or expired. <a href="<?= e(base_url('/auth/forgot-password.php')); ?>" style="color:inherit;text-decoration:underline;">Request a new one.</a></div>
+    <?php else: ?>
+        <form method="post" class="form-grid form-grid--single">
+            <?= csrf_field(); ?>
+            <input type="hidden" name="token" value="<?= e($token); ?>">
+            <div class="field">
+                <label for="password">New password</label>
+                <input id="password" type="password" name="password" autocomplete="new-password" required>
+            </div>
+            <div class="field">
+                <label for="password_confirmation">Confirm new password</label>
+                <input id="password_confirmation" type="password" name="password_confirmation" autocomplete="new-password" required>
+            </div>
+            <button class="button button--primary" type="submit">Update password</button>
+        </form>
+    <?php endif; ?>
+</div>
 <?php include dirname(__DIR__) . '/includes/footer.php'; ?>

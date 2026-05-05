@@ -44,24 +44,24 @@ $activeSidebar = 'creator-dashboard';
 
 include dirname(__DIR__) . '/includes/header.php';
 ?>
-<section class="stats-grid">
-    <article class="stat-box">
+<div class="stat-strip">
+    <div class="stat-strip__item">
         <strong><?= e((string) count($events)); ?></strong>
         <p>Managed events</p>
-    </article>
-    <article class="stat-box">
+    </div>
+    <div class="stat-strip__item">
         <strong><?= e((string) array_sum(array_map(static fn(array $event): int => (int) $event['review_count'], $events))); ?></strong>
-        <p>Submissions under review</p>
-    </article>
-    <article class="stat-box">
+        <p>Under review</p>
+    </div>
+    <div class="stat-strip__item">
         <strong><?= e((string) array_sum(array_map(static fn(array $event): int => (int) $event['issued_tokens'], $events))); ?></strong>
-        <p>Active issued tokens</p>
-    </article>
-    <article class="stat-box">
+        <p>Active tokens</p>
+    </div>
+    <div class="stat-strip__item">
         <strong><?= e((string) array_sum(array_map(static fn(array $event): int => (int) $event['ballots_count'], $events))); ?></strong>
-        <p>Recorded ballots</p>
-    </article>
-</section>
+        <p>Ballots cast</p>
+    </div>
+</div>
 
 <section class="panel">
     <div class="section-head">

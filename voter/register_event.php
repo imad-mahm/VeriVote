@@ -4,6 +4,9 @@ declare(strict_types=1);
 require_once dirname(__DIR__) . '/includes/bootstrap.php';
 
 require_login();
+if (!has_role(['voter', 'super_admin'])) {
+    redirect(dashboard_home_for_role((string) current_role_slug()));
+}
 
 $user = current_user();
 $eventId = (int) ($_GET['event'] ?? $_POST['event_id'] ?? 0);

@@ -28,16 +28,31 @@ function validate_phone_input(string $label, mixed $value, array &$errors): ?str
 
 function validate_password_input(string $password, array &$errors): void
 {
-    if (get_test_setting('bypass_password_validation', false)) {
+    if (get_site_setting('bypass_password_validation', get_test_setting('bypass_password_validation', false))) {
         return;
     }
 
-    if (strlen($password) < 10) {
-        $errors[] = 'Password must be at least 10 characters.';
+    $minLen = (int) get_site_setting('password_min_length', 10);
+    if (strlen($password) < $minLen) {
+        $errors[] = 'Password must be at least ' . $minLen . ' characters.';
     }
 
-    if (!preg_match('/[A-Z]/', $password) || !preg_match('/[a-z]/', $password) || !preg_match('/[0-9]/', $password)) {
-        $errors[] = 'Password must include uppercase, lowercase, and numeric characters.';
+    $complexityErrors = [];
+    if (get_site_setting('password_require_uppercase', true) && !preg_match('/[A-Z]/', $password)) {
+        $complexityErrors[] = 'uppercase';
+    }
+    if (get_site_setting('password_require_lowercase', true) && !preg_match('/[a-z]/', $password)) {
+        $complexityErrors[] = 'lowercase';
+    }
+    if (get_site_setting('password_require_numbers', true) && !preg_match('/[0-9]/', $password)) {
+        $complexityErrors[] = 'numeric';
+    }
+    if (get_site_setting('password_require_special', false) && !preg_match('/[^A-Za-z0-9]/', $password)) {
+        $complexityErrors[] = 'special character';
+    }
+
+    if ($complexityErrors !== []) {
+        $errors[] = 'Password must include ' . implode(', ', $complexityErrors) . ' characters.';
     }
 }
 

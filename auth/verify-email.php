@@ -9,7 +9,7 @@ $user = current_user();
 if (is_post_request()) {
     verify_csrf_or_fail();
     $action = (string) ($_POST['action'] ?? 'verify');
-    $user = refresh_current_user() ?? $user;
+    $user   = refresh_current_user() ?? $user;
 
     if ($action === 'resend') {
         if (!empty($user['phone_verified_at'])) {
@@ -19,7 +19,7 @@ if (is_post_request()) {
 
         try {
             send_account_phone_verification_code($user);
-            flash('success', 'A fresh SMS verification code has been sent.');
+            flash('success', 'A fresh verification code has been sent to your phone and email.');
         } catch (Throwable $exception) {
             flash('error', $exception->getMessage());
         }
@@ -39,7 +39,7 @@ if (is_post_request()) {
         redirect('/auth/verify-email.php');
     }
 
-    $code = trim((string) ($_POST['code'] ?? ''));
+    $code   = trim((string) ($_POST['code'] ?? ''));
     $record = fetch_one(
         'SELECT * FROM verification_codes
          WHERE user_id = :user_id AND purpose = "account_phone" AND used_at IS NULL
@@ -57,19 +57,17 @@ if (is_post_request()) {
     }
 
     execute_statement('UPDATE verification_codes SET used_at = NOW() WHERE id = :id', ['id' => $record['id']]);
-    execute_statement('UPDATE users SET phone_verified_at = NOW() WHERE id = :id', ['id' => $user['id']]);
+    execute_statement('UPDATE users SET phone_verified_at = NOW() WHERE id = :id',    ['id' => $user['id']]);
     clear_rate_limit('account-phone', (string) $user['id'] . '|' . client_ip());
     refresh_current_user();
     write_audit_log('phone_verified', 'users', (string) $user['id'], 'User verified their account phone.');
-    log_activity('verification.phone_verified', [
-        'user_id' => (int) $user['id'],
-    ]);
-    flash('success', 'Phone number verified successfully.');
+    log_activity('verification.phone_verified', ['user_id' => (int) $user['id']]);
+    flash('success', 'Phone number verified. You can now register for events.');
     redirect(dashboard_home_for_role((string) current_role_slug()));
 }
 
-$pageTitle = 'Verify Phone';
-$pageDescription = 'Confirm phone ownership for your Verivote account.';
+$pageTitle          = 'Verify Phone';
+$pageDescription    = 'Confirm phone ownership for your Verivote account.';
 $latestNotification = app_config('app_env') === 'development'
     ? fetch_one(
         'SELECT delivery_code, created_at
@@ -82,33 +80,34 @@ $latestNotification = app_config('app_env') === 'development'
 
 include dirname(__DIR__) . '/includes/header.php';
 ?>
-<section class="section">
-    <article class="panel" data-reveal>
-        <span class="eyebrow">Account Verification</span>
-        <h1>Verify your phone number</h1>
-        <p>Enter the latest SMS code sent to <strong><?= e((string) $user['phone']); ?></strong>. Event registration stays locked until phone ownership is confirmed.</p>
-        <?php if (!empty($user['phone_verified_at'])): ?>
-            <div class="alert alert--success">This phone number is already verified.</div>
-        <?php else: ?>
-            <form method="post" class="form-grid form-grid--single">
-                <?= csrf_field(); ?>
-                <div class="field">
-                    <label for="code">Verification code</label>
-                    <input id="code" type="text" name="code" maxlength="6" required>
-                </div>
-                <button class="button button--primary" type="submit">Verify phone</button>
-            </form>
-            <form method="post">
-                <?= csrf_field(); ?>
-                <input type="hidden" name="action" value="resend">
-                <button class="button button--ghost" type="submit">Resend code</button>
-            </form>
-            <?php if ($latestNotification): ?>
-                <div class="alert alert--info">
-                    Development helper: latest queued code is <strong><?= e($latestNotification['delivery_code']); ?></strong>.
-                </div>
-            <?php endif; ?>
+<div class="form-page" data-reveal>
+    <div class="form-page__header">
+        <span class="eyebrow">Account verification</span>
+        <h1>Verify your phone</h1>
+        <p>Enter the SMS code sent to <strong><?= e((string) $user['phone']); ?></strong>. Event registration stays locked until phone ownership is confirmed.</p>
+    </div>
+
+    <?php if (!empty($user['phone_verified_at'])): ?>
+        <div class="alert alert--success">This phone number is already verified.</div>
+    <?php else: ?>
+        <form method="post" class="form-grid form-grid--single">
+            <?= csrf_field(); ?>
+            <div class="field">
+                <label for="code">Verification code</label>
+                <input id="code" type="text" name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" required>
+            </div>
+            <button class="button button--primary" type="submit">Verify phone</button>
+        </form>
+        <form method="post">
+            <?= csrf_field(); ?>
+            <input type="hidden" name="action" value="resend">
+            <button class="button button--ghost" type="submit">Resend code</button>
+        </form>
+        <?php if ($latestNotification): ?>
+            <div class="alert alert--info">
+                Dev helper: latest queued code is <strong><?= e($latestNotification['delivery_code']); ?></strong>
+            </div>
         <?php endif; ?>
-    </article>
-</section>
+    <?php endif; ?>
+</div>
 <?php include dirname(__DIR__) . '/includes/footer.php'; ?>
