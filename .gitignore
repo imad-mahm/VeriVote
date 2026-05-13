@@ -23,3 +23,5 @@ uploads/documents/*
 !uploads/documents/.gitkeep
 DESIGN.md
 PRODUCT.md
+*.py
+*.docx
