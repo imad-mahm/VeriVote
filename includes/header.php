@@ -22,11 +22,12 @@ $bodyBaseUrl = rtrim(base_url(''), '/');
     <link rel="stylesheet" href="<?= e(base_url('/assets/css/app.css')); ?>">
 </head>
 <body class="<?= $isDashboard ? 'dashboard-body' : 'public-body'; ?>" data-base-url="<?= e($bodyBaseUrl); ?>">
+<a class="skip-link" href="#main-content">Skip to main content</a>
 <?php include __DIR__ . '/navigation.php'; ?>
 <?php if ($isDashboard): ?>
     <div class="app-shell">
         <?php include __DIR__ . '/sidebar.php'; ?>
-        <main class="app-main">
+        <main id="main-content" class="app-main">
             <section class="page-head">
                 <div>
                     <span class="eyebrow">Verivote</span>
@@ -43,16 +44,16 @@ $bodyBaseUrl = rtrim(base_url(''), '/');
                 <?php endif; ?>
             </section>
             <?php if ($flashes): ?>
-                <section class="flash-stack">
+                <section class="flash-stack" role="status" aria-live="polite" aria-atomic="true">
                     <?php foreach ($flashes as $flash): ?>
                         <div class="alert alert--<?= e($flash['type']); ?>"><?= e($flash['message']); ?></div>
                     <?php endforeach; ?>
                 </section>
             <?php endif; ?>
 <?php else: ?>
-    <main class="public-main">
+    <main id="main-content" class="public-main">
         <?php if ($flashes): ?>
-            <section class="container flash-stack flash-stack--public">
+            <section class="container flash-stack flash-stack--public" role="status" aria-live="polite" aria-atomic="true">
                 <?php foreach ($flashes as $flash): ?>
                     <div class="alert alert--<?= e($flash['type']); ?>"><?= e($flash['message']); ?></div>
                 <?php endforeach; ?>

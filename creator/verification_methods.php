@@ -170,24 +170,24 @@ $eventContextId = $eventId;
 
 include dirname(__DIR__) . '/includes/header.php';
 ?>
-<section class="stats-grid">
-    <article class="stat-box">
+<div class="stat-strip">
+    <div class="stat-strip__item">
         <strong><?= e((string) count($methods)); ?></strong>
-        <p>Total configured methods</p>
-    </article>
-    <article class="stat-box">
+        <p>Configured methods</p>
+    </div>
+    <div class="stat-strip__item">
         <strong><?= e((string) count(array_filter($methods, static fn(array $method): bool => (int) $method['is_active'] === 1))); ?></strong>
-        <p>Active methods</p>
-    </article>
-    <article class="stat-box">
+        <p>Active</p>
+    </div>
+    <div class="stat-strip__item">
         <strong><?= e((string) count(array_filter($methods, static fn(array $method): bool => (int) $method['requires_reviewer'] === 1))); ?></strong>
-        <p>Reviewer-driven steps</p>
-    </article>
-    <article class="stat-box">
+        <p>Reviewer-driven</p>
+    </div>
+    <div class="stat-strip__item">
         <strong><?= $readiness['verification_method_count'] > 0 ? 'Ready' : 'Missing'; ?></strong>
-        <p>Verification configuration status</p>
-    </article>
-</section>
+        <p>Verification status</p>
+    </div>
+</div>
 
 <section class="grid-2">
     <article class="panel">

@@ -269,23 +269,23 @@ include dirname(__DIR__) . '/includes/header.php';
             </div>
 
             <?php if ($summary): ?>
-                <div class="stats-grid">
-                    <article class="stat-box">
+                <div class="stat-strip">
+                    <div class="stat-strip__item">
                         <strong><?= e((string) $summary['required_complete']); ?>/<?= e((string) $summary['required_total']); ?></strong>
                         <p>Required checks complete</p>
-                    </article>
-                    <article class="stat-box">
+                    </div>
+                    <div class="stat-strip__item">
                         <strong><?= e((string) $summary['pending_total']); ?></strong>
                         <p>Pending or under review</p>
-                    </article>
-                    <article class="stat-box">
+                    </div>
+                    <div class="stat-strip__item">
                         <strong><?= e((string) $summary['rejected_total']); ?></strong>
                         <p>Rejected checks</p>
-                    </article>
-                    <article class="stat-box">
+                    </div>
+                    <div class="stat-strip__item">
                         <strong><?= submission_ready_for_approval((int) $selectedSubmission['id']) ? 'Eligible' : 'Blocked'; ?></strong>
                         <p>Approval readiness</p>
-                    </article>
+                    </div>
                 </div>
             <?php endif; ?>
 

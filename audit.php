@@ -42,6 +42,13 @@ include __DIR__ . '/includes/header.php';
     ?>
 
     <section class="section section--top" data-reveal>
+        <div class="breadcrumb" style="margin-bottom:16px;">
+            <a href="<?= e(base_url('/events.php')); ?>">Elections</a>
+            <span>&rsaquo;</span>
+            <a href="<?= e(base_url('/event.php?event=' . $event['id'])); ?>"><?= e($event['title']); ?></a>
+            <span>&rsaquo;</span>
+            <span>Audit</span>
+        </div>
         <div class="page-intro">
             <div>
                 <span class="eyebrow">Audit surface</span>
@@ -62,6 +69,16 @@ include __DIR__ . '/includes/header.php';
                 </dl>
             </div>
             <?php endif; ?>
+        </div>
+    </section>
+
+    <section class="section">
+        <div class="inline-actions">
+            <a class="button button--ghost" href="<?= e(base_url('/event.php?event=' . $event['id'])); ?>">&larr; Back to election</a>
+            <?php if (can_view_public_results($event)): ?>
+                <a class="button button--ghost" href="<?= e(base_url('/results.php?event=' . $event['id'])); ?>">View results</a>
+            <?php endif; ?>
+            <a class="button button--ghost" href="<?= e(base_url('/voter/verify_vote.php?event=' . $event['id'])); ?>">Verify a receipt</a>
         </div>
     </section>
 

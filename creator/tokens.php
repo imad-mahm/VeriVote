@@ -33,22 +33,31 @@ if (is_post_request()) {
                 ]);
 
                 if (!$delivery['success']) {
-                    flash('error', 'Token issued, but SMS delivery failed. Raw token: ' . $issued['token']);
+                    flash('error', 'Token issued but delivery failed — the voter did not receive it via SMS or email. Reference: ' . $issued['reference']);
                 } else {
                     $channelLabel = $delivery['fallback_used'] ? 'email fallback' : 'SMS';
-                    flash('success', 'Token issued successfully via ' . $channelLabel . '. Raw token: ' . $issued['token']);
+                    flash('success', 'Token issued and delivered via ' . $channelLabel . '. Reference: ' . $issued['reference']);
                 }
             } catch (Throwable $exception) {
-                flash('error', $exception->getMessage());
+                log_activity('token.issue_error', ['event_id' => $eventId, 'submission_id' => $submissionId, 'error' => $exception->getMessage()], 'ERROR');
+                flash('error', 'Could not issue token. Please try again.');
             }
         }
     }
 
     if ($action === 'revoke') {
         $tokenId = (int) ($_POST['token_id'] ?? 0);
-        revoke_voting_token($tokenId, (int) $actor['id']);
-        write_audit_log('token_revoked', 'voting_tokens', (string) $tokenId, 'Voting token revoked.', $eventId);
-        flash('success', 'Token revoked.');
+        $revokeTarget = fetch_one(
+            'SELECT id FROM voting_tokens WHERE id = :id AND event_id = :event_id AND status = "issued"',
+            ['id' => $tokenId, 'event_id' => $eventId]
+        );
+        if ($revokeTarget) {
+            revoke_voting_token($tokenId, (int) $actor['id']);
+            write_audit_log('token_revoked', 'voting_tokens', (string) $tokenId, 'Voting token revoked.', $eventId);
+            flash('success', 'Token revoked.');
+        } else {
+            flash('error', 'Token not found or already revoked.');
+        }
     }
 
     if ($action === 'reissue') {
@@ -72,13 +81,14 @@ if (is_post_request()) {
                 ]);
 
                 if (!$delivery['success']) {
-                    flash('error', 'Token reissued, but SMS delivery failed. Raw token: ' . $issued['token']);
+                    flash('error', 'Token reissued but delivery failed — the voter did not receive it via SMS or email. Reference: ' . $issued['reference']);
                 } else {
                     $channelLabel = $delivery['fallback_used'] ? 'email fallback' : 'SMS';
-                    flash('success', 'Token reissued via ' . $channelLabel . '. Raw token: ' . $issued['token']);
+                    flash('success', 'Token reissued and delivered via ' . $channelLabel . '. Reference: ' . $issued['reference']);
                 }
             } catch (Throwable $exception) {
-                flash('error', $exception->getMessage());
+                log_activity('token.reissue_error', ['event_id' => $eventId, 'token_id' => $tokenId, 'error' => $exception->getMessage()], 'ERROR');
+                flash('error', 'Could not reissue token. Please try again.');
             }
         }
     }

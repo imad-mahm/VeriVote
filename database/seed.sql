@@ -137,38 +137,10 @@ ON DUPLICATE KEY UPDATE
     config_json = VALUES(config_json),
     is_active = VALUES(is_active);
 
-INSERT INTO voter_event_submissions (
-    id, event_id, user_id, submission_reference, status, approval_notes, submitted_at, approved_at, approved_by, last_reviewed_at, created_at, updated_at
-) VALUES
-    (1, 1, 5, 'SUB-VERI-2026-0001', 'under_review', 'Waiting for trusted verifier approval.', '2026-04-18 11:30:00', NULL, NULL, '2026-04-19 09:00:00', NOW(), NOW())
-ON DUPLICATE KEY UPDATE
-    status = VALUES(status),
-    approval_notes = VALUES(approval_notes),
-    last_reviewed_at = VALUES(last_reviewed_at);
-
-INSERT INTO voter_submission_answers (
-    submission_id, field_key, field_label, field_type, text_value, file_path, original_filename
-) VALUES
-    (1, 'full_name', 'Full Name', 'text', 'Demo Voter', NULL, NULL),
-    (1, 'email', 'Email Address', 'email', 'voter@verivote.test', NULL, NULL),
-    (1, 'phone', 'Phone Number', 'phone', '+12025550104', NULL, NULL),
-    (1, 'date_of_birth', 'Date of Birth', 'date', '1995-05-12', NULL, NULL),
-    (1, 'passport_number', 'Passport Number', 'passport', 'P-449921', NULL, NULL),
-    (1, 'id_document', 'Identity Document Upload', 'file', NULL, 'uploads/documents/demo-passport.pdf', 'demo-passport.pdf'),
-    (1, 'residency_note', 'Residency Note', 'textarea', 'Resident in the event region since 2022.', NULL, NULL);
-
-INSERT INTO voter_verifications (
-    id, submission_id, verification_method_id, status, verifier_user_id, notes, verified_at
-) VALUES
-    (1, 1, 1, 'approved', 2, 'SMS code confirmed.', '2026-04-18 11:35:00'),
-    (2, 1, 2, 'approved', 3, 'Document matched submission details.', '2026-04-19 08:30:00'),
-    (3, 1, 3, 'pending', NULL, 'Awaiting in-person confirmation.', NULL),
-    (4, 1, 4, 'pending', NULL, 'Pending final review.', NULL)
-ON DUPLICATE KEY UPDATE
-    status = VALUES(status),
-    verifier_user_id = VALUES(verifier_user_id),
-    notes = VALUES(notes),
-    verified_at = VALUES(verified_at);
+-- No pre-existing submission for voter@verivote.test on Event 1.
+-- This ensures the registration form (with document upload) is visible for demo purposes.
+-- During a live demo: log in as voter@verivote.test → open Event 1 → fill the form → upload a document.
+-- Then switch to creator@verivote.test → Verifications → review the uploaded document.
 
 INSERT INTO audit_logs (
     actor_user_id, event_id, action_type, target_table, target_id, description, metadata_json, ip_address, user_agent, previous_hash, entry_hash

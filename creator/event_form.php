@@ -22,9 +22,12 @@ if (is_post_request()) {
         $description = trim((string) ($_POST['description'] ?? ''));
         $startAt = trim((string) ($_POST['start_at'] ?? ''));
         $endAt = trim((string) ($_POST['end_at'] ?? ''));
-        $status = (string) ($_POST['status'] ?? 'draft');
-        $resultVisibility = (string) ($_POST['result_visibility'] ?? 'public_after_close');
-        $verificationPolicy = (string) ($_POST['verification_policy'] ?? 'all_required');
+        $allowedStatuses = ['draft', 'scheduled', 'active', 'closed', 'archived'];
+        $allowedVisibilities = ['private', 'public_after_close', 'public_live'];
+        $allowedPolicies = ['all_required', 'any_one'];
+        $status = in_array((string) ($_POST['status'] ?? ''), $allowedStatuses, true) ? (string) $_POST['status'] : 'draft';
+        $resultVisibility = in_array((string) ($_POST['result_visibility'] ?? ''), $allowedVisibilities, true) ? (string) $_POST['result_visibility'] : 'public_after_close';
+        $verificationPolicy = in_array((string) ($_POST['verification_policy'] ?? ''), $allowedPolicies, true) ? (string) $_POST['verification_policy'] : 'all_required';
         $eventNotice = trim((string) ($_POST['event_notice'] ?? ''));
         $allowSelfRegistration = !empty($_POST['allow_self_registration']) ? 1 : 0;
         $personalVerificationEnabled = !empty($_POST['personal_verification_enabled']) ? 1 : 0;
@@ -186,7 +189,7 @@ if (is_post_request()) {
 
     if ($event && $action === 'assign_verifier') {
         $verifierUserId = (int) ($_POST['user_id'] ?? 0);
-        $verifierType = (string) ($_POST['verifier_type'] ?? 'mo5tar');
+        $verifierType = (string) ($_POST['verifier_type'] ?? 'in_person');
         $assignee = fetch_one(
             'SELECT users.id
              FROM users
@@ -282,24 +285,24 @@ $eventContextId = $event['id'] ?? null;
 include dirname(__DIR__) . '/includes/header.php';
 ?>
 <?php if ($event && $readiness): ?>
-    <section class="stats-grid">
-        <article class="stat-box">
+    <div class="stat-strip">
+        <div class="stat-strip__item">
             <strong><?= e((string) $readiness['candidate_count']); ?></strong>
             <p>Active ballot options</p>
-        </article>
-        <article class="stat-box">
+        </div>
+        <div class="stat-strip__item">
             <strong><?= e((string) $readiness['field_count']); ?></strong>
-            <p>Configured required fields</p>
-        </article>
-        <article class="stat-box">
+            <p>Required fields</p>
+        </div>
+        <div class="stat-strip__item">
             <strong><?= e((string) $readiness['verification_method_count']); ?></strong>
-            <p>Active verification methods</p>
-        </article>
-        <article class="stat-box">
-            <strong><?= $readiness['is_ready'] ? 'Ready' : 'Needs Work'; ?></strong>
-            <p>Event configuration status</p>
-        </article>
-    </section>
+            <p>Verification methods</p>
+        </div>
+        <div class="stat-strip__item">
+            <strong><?= $readiness['is_ready'] ? 'Ready' : 'Incomplete'; ?></strong>
+            <p>Configuration status</p>
+        </div>
+    </div>
 
     <?php if ($readiness['issues'] !== []): ?>
         <section class="panel">

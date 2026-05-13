@@ -3,6 +3,10 @@ declare(strict_types=1);
 
 require_once dirname(__DIR__) . '/includes/bootstrap.php';
 
+if (current_user()) {
+    redirect(dashboard_home_for_role((string) current_role_slug()));
+}
+
 if (is_post_request()) {
     verify_csrf_or_fail();
     $email = strtolower(trim((string) ($_POST['email'] ?? '')));
@@ -13,7 +17,7 @@ if (is_post_request()) {
         redirect('/auth/forgot-password.php');
     }
 
-    $user = fetch_one('SELECT * FROM users WHERE email = :email LIMIT 1', ['email' => $email]);
+    $user = fetch_one('SELECT id, full_name, email FROM users WHERE email = :email AND status = "active" LIMIT 1', ['email' => $email]);
 
     if ($user) {
         execute_statement(

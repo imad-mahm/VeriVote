@@ -7,8 +7,9 @@ $links = match ($role) {
     'super_admin' => [
         ['label' => 'Overview', 'path' => '/admin/dashboard.php', 'slug' => 'admin-dashboard'],
         ['label' => 'Privileged Users', 'path' => '/admin/users.php', 'slug' => 'admin-users'],
+        ['label' => 'Voter Accounts', 'path' => '/admin/voters.php', 'slug' => 'admin-voters'],
+        ['label' => 'Site Settings', 'path' => '/admin/site_settings.php', 'slug' => 'admin-site-settings'],
         ['label' => 'Audit Trail', 'path' => '/admin/audits.php', 'slug' => 'admin-audits'],
-        ['label' => 'Configuration', 'path' => '/admin/config.php', 'slug' => 'admin-config'],
         ['label' => 'Test Settings', 'path' => '/admin/settings.php', 'slug' => 'admin-settings'],
     ],
     'event_creator' => [
@@ -23,6 +24,7 @@ $links = match ($role) {
     ],
     default => [
         ['label' => 'Overview', 'path' => '/voter/dashboard.php', 'slug' => 'voter-dashboard'],
+        ['label' => 'My Account', 'path' => '/voter/account.php', 'slug' => 'voter-account'],
         ['label' => 'Cast Vote', 'path' => '/voter/cast_vote.php', 'slug' => 'voter-cast'],
         ['label' => 'Verify Receipt', 'path' => '/voter/verify_vote.php', 'slug' => 'voter-verify'],
     ],

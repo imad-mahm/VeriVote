@@ -61,7 +61,27 @@ include dirname(__DIR__) . '/includes/header.php';
                                     <span class="badge badge-success"><?= e(format_status($permission)); ?></span>
                                 <?php endif; ?>
                             <?php endforeach; ?>
-                            <a href="<?= e(base_url('/creator/verifications.php?event=' . $event['id'])); ?>">Open tools</a>
+                        </div>
+                        <div class="table-actions" style="margin-top:8px;">
+                            <a href="<?= e(base_url('/event.php?event=' . $event['id'])); ?>">View</a>
+                            <?php if (!empty($permissions['review_verifications'])): ?>
+                                <a href="<?= e(base_url('/creator/verifications.php?event=' . $event['id'])); ?>">Verifications</a>
+                            <?php endif; ?>
+                            <?php if (!empty($permissions['manage_candidates'])): ?>
+                                <a href="<?= e(base_url('/creator/candidates.php?event=' . $event['id'])); ?>">Candidates</a>
+                            <?php endif; ?>
+                            <?php if (!empty($permissions['manage_fields'])): ?>
+                                <a href="<?= e(base_url('/creator/required_fields.php?event=' . $event['id'])); ?>">Fields</a>
+                            <?php endif; ?>
+                            <?php if (!empty($permissions['issue_tokens'])): ?>
+                                <a href="<?= e(base_url('/creator/tokens.php?event=' . $event['id'])); ?>">Tokens</a>
+                            <?php endif; ?>
+                            <?php if (!empty($permissions['view_results'])): ?>
+                                <a href="<?= e(base_url('/creator/results.php?event=' . $event['id'])); ?>">Results</a>
+                            <?php endif; ?>
+                            <?php if (empty($permissions)): ?>
+                                <a href="<?= e(base_url('/creator/verifications.php?event=' . $event['id'])); ?>">Open tools</a>
+                            <?php endif; ?>
                         </div>
                     </td>
                 </tr>

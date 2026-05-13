@@ -13,8 +13,10 @@ if (!$event) {
 }
 
 $pageTitle       = $event['title'];
-$pageDescription = $event['description'];
+$pageDescription = $event['description'] ?: '';
 $activeNav       = 'events';
+$viewer          = current_user();
+$viewerRole      = $viewer !== null ? (string) ($viewer['role_slug'] ?? '') : '';
 $candidates      = fetch_all(
     'SELECT * FROM candidates_or_options
      WHERE event_id = :event_id AND is_active = 1
@@ -60,9 +62,20 @@ include __DIR__ . '/includes/header.php';
     <?php endif; ?>
 
     <div class="inline-actions" style="padding-top:8px;">
-        <a class="button button--primary" href="<?= e(base_url('/voter/register_event.php?event=' . $event['id'])); ?>">Register for this event</a>
-        <a class="button button--ghost"   href="<?= e(base_url('/voter/cast_vote.php?event=' . $event['id'])); ?>">Cast vote</a>
-        <a class="button button--ghost"   href="<?= e(base_url('/voter/verify_vote.php?event=' . $event['id'])); ?>">Verify receipt</a>
+        <?php if (in_array($viewerRole, ['event_creator', 'super_admin'], true)): ?>
+            <a class="button button--primary" href="<?= e(base_url('/creator/event_form.php?event=' . $event['id'])); ?>">Manage event</a>
+        <?php elseif ($viewerRole === 'co_admin'): ?>
+            <a class="button button--primary" href="<?= e(base_url('/creator/verifications.php?event=' . $event['id'])); ?>">Open tools</a>
+        <?php else: ?>
+            <a class="button button--primary" href="<?= e(base_url('/voter/register_event.php?event=' . $event['id'])); ?>">Register</a>
+            <?php if ($event['status'] === 'active' && $viewerRole === 'voter'): ?>
+                <a class="button button--ghost" href="<?= e(base_url('/voter/cast_vote.php?event=' . $event['id'])); ?>">Vote</a>
+            <?php endif; ?>
+        <?php endif; ?>
+        <?php if (can_view_public_results($event)): ?>
+            <a class="button button--ghost" href="<?= e(base_url('/results.php?event=' . $event['id'])); ?>">Results</a>
+        <?php endif; ?>
+        <a class="button button--ghost" href="<?= e(base_url('/voter/verify_vote.php?event=' . $event['id'])); ?>">Verify receipt</a>
     </div>
 </section>
 
@@ -70,7 +83,7 @@ include __DIR__ . '/includes/header.php';
     <div class="grid-2">
         <article class="panel">
             <span class="eyebrow">Required fields</span>
-            <h2>Voter submission data</h2>
+            <h2>What you need to provide</h2>
             <?php if (!$requiredFields): ?>
                 <p>No required fields configured for this event.</p>
             <?php else: ?>

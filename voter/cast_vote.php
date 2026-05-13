@@ -12,6 +12,7 @@ $eventId = (int) ($_GET['event'] ?? $_POST['event_id'] ?? 0);
 $event = $eventId > 0 ? fetch_event_by_id($eventId) : null;
 $validatedToken = null;
 $receiptResult = null;
+$pendingVote = null;
 
 if (is_post_request()) {
     verify_csrf_or_fail();
@@ -58,22 +59,44 @@ if (is_post_request()) {
     }
 
     if ($action === 'cast_ballot') {
-        $tokenInput = trim((string) ($_POST['token'] ?? ''));
+        $tokenInput  = trim((string) ($_POST['token'] ?? ''));
         $candidateId = (int) ($_POST['candidate_id'] ?? 0);
+        $confirmed   = isset($_POST['confirmed']);
 
-        try {
-            $receiptResult = cast_ballot($eventId, $tokenInput, $candidateId);
-            write_audit_log(
-                'ballot_cast',
-                'events',
-                (string) $eventId,
-                'Anonymous ballot cast successfully.',
-                $eventId,
-                ['public_receipt_hash' => $receiptResult['receipt_public_hash']]
-            );
-        } catch (Throwable $exception) {
-            flash('error', $exception->getMessage());
-            redirect('/voter/cast_vote.php?event=' . $eventId);
+        if (!$confirmed) {
+            $confirmCandidate = $candidateId > 0
+                ? fetch_one(
+                    'SELECT option_label FROM candidates_or_options
+                     WHERE id = :id AND event_id = :event_id AND is_active = 1',
+                    ['id' => $candidateId, 'event_id' => $eventId]
+                )
+                : null;
+
+            if (!$confirmCandidate) {
+                flash('error', 'Please select a ballot option before continuing.');
+                redirect('/voter/cast_vote.php?event=' . $eventId);
+            }
+
+            $pendingVote = [
+                'token'           => $tokenInput,
+                'candidate_id'    => $candidateId,
+                'candidate_label' => (string) $confirmCandidate['option_label'],
+            ];
+        } else {
+            try {
+                $receiptResult = cast_ballot($eventId, $tokenInput, $candidateId);
+                write_audit_log(
+                    'ballot_cast',
+                    'events',
+                    (string) $eventId,
+                    'Anonymous ballot cast successfully.',
+                    $eventId,
+                    ['public_receipt_hash' => $receiptResult['receipt_public_hash']]
+                );
+            } catch (Throwable $exception) {
+                flash('error', $exception->getMessage());
+                redirect('/voter/cast_vote.php?event=' . $eventId);
+            }
         }
     }
 }
@@ -122,8 +145,12 @@ include dirname(__DIR__) . '/includes/header.php';
                     <dt>Private receipt</dt>
                     <dd>
                         <span style="font-family:ui-monospace,monospace;font-size:0.85rem;word-break:break-all;"><?= e($receiptResult['receipt']); ?></span>
-                        <button class="button button--ghost" type="button" data-copy="<?= e($receiptResult['receipt']); ?>" style="margin-top:8px;min-height:32px;padding:0 12px;font-size:0.82rem;">Copy</button>
-                        <p style="margin-top:6px;">Keep this secure. It is the only value you can use to verify your vote later.</p>
+                        <div class="inline-actions" style="margin-top:8px;">
+                            <button class="button button--ghost" type="button" data-copy="<?= e($receiptResult['receipt']); ?>" style="min-height:32px;padding:0 12px;font-size:0.82rem;">Copy receipt</button>
+                            <a class="button button--ghost" href="<?= e(base_url('/voter/verify_vote.php?event=' . $eventId)); ?>" style="min-height:32px;padding:0 12px;font-size:0.82rem;">Verify receipt</a>
+                            <a class="button button--primary" href="<?= e(base_url('/voter/dashboard.php')); ?>" style="min-height:32px;padding:0 12px;font-size:0.82rem;">Back to dashboard</a>
+                        </div>
+                        <p style="margin-top:8px;">Keep this secure. It is the only value that lets you verify your vote was recorded correctly.</p>
                     </dd>
                 </div>
                 <div class="def-row">
@@ -132,6 +159,38 @@ include dirname(__DIR__) . '/includes/header.php';
                 </div>
             </dl>
         </div>
+    </section>
+<?php elseif ($pendingVote): ?>
+    <section class="panel">
+        <span class="eyebrow">Confirm your vote</span>
+        <h2>Review your selection</h2>
+        <div class="alert alert--warning">
+            Once submitted, your ballot cannot be changed or revoked. This action is permanent.
+        </div>
+        <div class="def-list" style="margin-top:4px;">
+            <dl>
+                <div class="def-row">
+                    <dt>Election</dt>
+                    <dd><?= e($event['title']); ?></dd>
+                </div>
+                <div class="def-row">
+                    <dt>Your selection</dt>
+                    <dd><strong><?= e($pendingVote['candidate_label']); ?></strong></dd>
+                </div>
+            </dl>
+        </div>
+        <form method="post" class="form-grid form-grid--single" style="margin-top:8px;">
+            <?= csrf_field(); ?>
+            <input type="hidden" name="action" value="cast_ballot">
+            <input type="hidden" name="event_id" value="<?= e((string) $eventId); ?>">
+            <input type="hidden" name="token" value="<?= e($pendingVote['token']); ?>">
+            <input type="hidden" name="candidate_id" value="<?= e((string) $pendingVote['candidate_id']); ?>">
+            <input type="hidden" name="confirmed" value="1">
+            <div class="inline-actions">
+                <button class="button button--primary" type="submit">Confirm and cast my ballot</button>
+                <a class="button button--ghost" href="<?= e(base_url('/voter/cast_vote.php?event=' . $eventId)); ?>">Change my selection</a>
+            </div>
+        </form>
     </section>
 <?php elseif ($validatedToken): ?>
     <?php
@@ -176,7 +235,8 @@ include dirname(__DIR__) . '/includes/header.php';
             <input type="hidden" name="event_id" value="<?= e((string) $eventId); ?>">
             <div class="field">
                 <label for="token">Voting token</label>
-                <input id="token" type="text" name="token" placeholder="VT-..." required>
+                <input id="token" type="text" name="token" placeholder="VT-..." required autocomplete="off">
+                <span class="helper-text">Check your email for a message from Verivote when your registration was approved. <a href="<?= e(base_url('/voter/dashboard.php')); ?>">View your tokens in your dashboard.</a></span>
             </div>
             <button class="button button--primary" type="submit">Validate token</button>
         </form>

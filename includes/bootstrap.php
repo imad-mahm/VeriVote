@@ -32,3 +32,8 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
 }
 
 ensure_upload_directories();
+
+header('X-Frame-Options: DENY');
+header('X-Content-Type-Options: nosniff');
+header('Referrer-Policy: same-origin');
+header('X-XSS-Protection: 0');

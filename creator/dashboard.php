@@ -113,7 +113,9 @@ include dirname(__DIR__) . '/includes/header.php';
                         </td>
                         <td><?= e((string) $event['issued_tokens']); ?> active tokens</td>
                         <td class="table-actions">
+                            <a href="<?= e(base_url('/event.php?event=' . $event['id'])); ?>">View</a>
                             <a href="<?= e(base_url('/creator/event_form.php?event=' . $event['id'])); ?>">Settings</a>
+                            <a href="<?= e(base_url('/creator/candidates.php?event=' . $event['id'])); ?>">Candidates</a>
                             <a href="<?= e(base_url('/creator/verification_methods.php?event=' . $event['id'])); ?>">Methods</a>
                             <a href="<?= e(base_url('/creator/verifications.php?event=' . $event['id'])); ?>">Verifications</a>
                             <a href="<?= e(base_url('/creator/tokens.php?event=' . $event['id'])); ?>">Tokens</a>

@@ -42,24 +42,24 @@ $eventContextId = $eventId;
 
 include dirname(__DIR__) . '/includes/header.php';
 ?>
-<section class="stats-grid">
-    <article class="stat-box">
+<div class="stat-strip">
+    <div class="stat-strip__item">
         <strong><?= e((string) $results['total']); ?></strong>
         <p>Total ballots</p>
-    </article>
-    <article class="stat-box">
+    </div>
+    <div class="stat-strip__item">
         <strong><?= e((string) $approvedCount); ?></strong>
         <p>Approved voters</p>
-    </article>
-    <article class="stat-box">
+    </div>
+    <div class="stat-strip__item">
         <strong><?= e((string) $usedTokenCount); ?></strong>
         <p>Used tokens</p>
-    </article>
-    <article class="stat-box">
+    </div>
+    <div class="stat-strip__item">
         <strong><?= e($snapshot ? substr($snapshot['integrity_hash'], 0, 10) . '...' : 'None'); ?></strong>
         <p>Latest snapshot hash</p>
-    </article>
-</section>
+    </div>
+</div>
 
 <section class="grid-2">
     <article class="results-strip">

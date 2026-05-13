@@ -14,7 +14,7 @@
     /* Ink */
     --ink:          oklch(17%   0.008 55);
     --ink-2:        oklch(36%   0.010 58);
-    --ink-3:        oklch(56%   0.008 65);
+    --ink-3:        oklch(44%   0.009 62); /* darkened from 56% for WCAG AA on canvas */
 
     /* Rules */
     --rule:         oklch(83%   0.008 72);
@@ -67,8 +67,30 @@ body {
 }
 
 a { color: inherit; text-decoration: none; }
+a:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    border-radius: 2px;
+}
 img { max-width: 100%; display: block; }
 button, input, select, textarea { font: inherit; }
+
+/* Skip-to-content — visually hidden until focused */
+.skip-link {
+    position: absolute;
+    top: -100%;
+    left: 12px;
+    z-index: 200;
+    padding: 8px 16px;
+    background: var(--accent);
+    color: var(--accent-over);
+    font-size: 0.875rem;
+    font-weight: 600;
+    border-radius: 0 0 var(--radius) var(--radius);
+    text-decoration: none;
+    transition: top 0.1s ease;
+}
+.skip-link:focus { top: 0; outline: none; }
 
 /* ── Typography ──────────────────────────────────────────── */
 h1, h2, h3, h4 { margin: 0; }
@@ -349,7 +371,6 @@ strong { color: var(--ink); }
     min-height: 460px;
     padding: 28px;
     display: grid;
-    align-content: end;
     border-radius: var(--radius);
     border: 1px solid var(--hero-rule);
     background: var(--hero-surface);
@@ -634,11 +655,11 @@ input[type="checkbox"]:focus-visible {
 .badge-muted {
     background: var(--surface-deep);
     border-color: var(--rule);
-    color: var(--ink-3);
+    color: var(--ink-2); /* ink-3 fails contrast on surface-deep; use ink-2 */
 }
 
 /* ── Tables ──────────────────────────────────────────────── */
-.table-wrap { overflow: hidden; }
+.table-wrap { overflow-x: auto; overflow-y: hidden; }
 
 table { width: 100%; border-collapse: collapse; }
 
@@ -794,7 +815,6 @@ tr:hover td { background: oklch(96% 0.006 75); }
 
 .page-head h1 {
     font-size: clamp(1.7rem, 3.5vw, 2.4rem);
-    margin-top: 6px;
 }
 
 .user-chip {
@@ -1056,6 +1076,15 @@ td p { margin-top: 4px; color: var(--ink-3); font-size: 0.82rem; max-width: none
     max-width: none;
 }
 
+/* Anchor stat items (e.g. admin dashboard links) */
+a.stat-strip__item {
+    cursor: pointer;
+    text-decoration: none;
+    color: inherit;
+    transition: background 0.15s ease;
+}
+a.stat-strip__item:hover { background: var(--surface-alt); }
+
 /* ── Feature list — oversized ordinals, not cards ────────── */
 .feature-list {
     display: grid;
@@ -1277,26 +1306,104 @@ td p { margin-top: 4px; color: var(--ink-3); font-size: 0.82rem; max-width: none
 }
 
 /* ── Responsive: tablet (1080px) ────────────────────────────
-   Merged into one block — was duplicated                    */
+   Sidebar becomes a horizontal scrollable sticky tab strip   */
 @media (max-width: 1080px) {
+    /* ── Layout grids collapse to single column ── */
     .hero__inner,
     .grid-2,
     .grid-3,
     .grid-cards,
     .form-grid,
     .stats-grid,
-    .status-row,
-    .auth-shell { grid-template-columns: 1fr; }
+    .status-row { grid-template-columns: 1fr; }
 
+    /* auth-shell collapses; form comes first via order */
+    .auth-shell { grid-template-columns: 1fr; }
+    .auth-shell__form   { order: 1; }
+    .auth-shell__visual { order: 2; }
+
+    /* ── App shell: sidebar above main ── */
     .app-shell { grid-template-columns: 1fr; }
 
+    /* ── Sidebar → horizontal sticky strip ── */
     .sidebar {
-        position: static;
+        position: sticky;
+        top: 72px;
+        z-index: 40;
         height: auto;
+        padding: 0;
         border-right: 0;
         border-bottom: 1px solid var(--rule);
+        background: var(--surface-alt);
+        flex-direction: row;
+        align-items: center;
+        gap: 0;
+        overflow-x: auto;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none; /* Firefox */
     }
 
+    .sidebar::-webkit-scrollbar { display: none; } /* Safari/Chrome */
+
+    /* Hide the header block inside the strip */
+    .sidebar__header { display: none; }
+
+    /* Nav links become horizontal tabs */
+    .sidebar__nav,
+    .sidebar__section {
+        display: flex;
+        flex-direction: row;
+        gap: 0;
+        flex-shrink: 0;
+    }
+
+    .sidebar__section { margin-top: 0; }
+    .sidebar__section > .eyebrow { display: none; } /* no section labels in strip */
+
+    .sidebar__nav a,
+    .sidebar__section a {
+        white-space: nowrap;
+        padding: 14px 16px;
+        border-radius: 0;
+        border-bottom: 2px solid transparent;
+        font-size: 0.84rem;
+    }
+
+    .sidebar__nav a.is-active,
+    .sidebar__section a.is-active {
+        border-bottom-color: var(--accent);
+        background: transparent;
+        color: var(--accent);
+    }
+
+    .sidebar__nav a:hover,
+    .sidebar__section a:hover {
+        background: var(--surface-deep);
+        border-radius: 0;
+    }
+
+    /* Sign-out button moves to the right end of the strip */
+    .sidebar__footer {
+        margin-top: 0;
+        margin-left: auto;
+        padding: 8px 12px;
+        border-top: 0;
+        flex-shrink: 0;
+    }
+
+    .sidebar__footer .button--block {
+        width: auto;
+        white-space: nowrap;
+        min-height: 34px;
+        padding: 0 14px;
+        font-size: 0.82rem;
+    }
+
+    /* app-main: prevent horizontal overflow from tables */
+    .app-main { overflow-x: hidden; min-width: 0; }
+
+    /* ── Public layout adjustments ── */
     .hero__visual { min-height: 280px; }
 
     .feature-list { grid-template-columns: 1fr; }
@@ -1305,13 +1412,16 @@ td p { margin-top: 4px; color: var(--ink-3); font-size: 0.82rem; max-width: none
 
     .cta-split { grid-template-columns: 1fr; }
     .cta-split__half:first-child { border-right: 0; border-bottom: 1px solid var(--rule); }
+    .cta-split__half { padding: 32px 28px; }
 
     .page-intro { grid-template-columns: 1fr; }
     .event-row  { grid-template-columns: 1fr; }
+
 }
 
 /* ── Responsive: mobile (840px) ─────────────────────────── */
 @media (max-width: 840px) {
+    /* ── Topnav mobile drawer ── */
     .mobile-nav-toggle { display: inline-flex; }
 
     .topnav {
@@ -1330,6 +1440,7 @@ td p { margin-top: 4px; color: var(--ink-3); font-size: 0.82rem; max-width: none
         pointer-events: none;
         transform: translateY(-6px);
         transition: opacity 0.15s ease, transform 0.15s ease;
+        z-index: 60;
     }
 
     .topnav.is-open {
@@ -1338,26 +1449,138 @@ td p { margin-top: 4px; color: var(--ink-3); font-size: 0.82rem; max-width: none
         transform: translateY(0);
     }
 
-    .page-head,
-    .site-footer__inner,
-    .list-row { flex-direction: column; align-items: stretch; }
+    /* ── Page head wraps instead of row ── */
+    .page-head { flex-wrap: wrap; }
 
-    .list-row > .button { width: 100%; }
+    /* ── Footer stacks ── */
+    .site-footer__inner { flex-direction: column; align-items: stretch; }
 
+    /* ── list-row stacks — except inside .list-shell--bare (quick actions) ── */
+    .list-shell:not(.list-shell--bare) .list-row,
+    .results-strip .list-row,
+    .panel > .list-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .list-shell:not(.list-shell--bare) .list-row > .button,
+    .results-strip .list-row > .button,
+    .panel > .list-row > .button {
+        width: 100%;
+    }
+
+    /* ── Section head and section rule allow wrapping ── */
+    .section-head { flex-wrap: wrap; }
+    .section-rule { flex-wrap: wrap; }
+
+    /* ── Spacing ── */
     .panel { padding: 20px; }
     .list-shell, .ledger, .results-strip { padding: 16px 20px; }
     .auth-shell__visual, .auth-shell__form { padding: 32px 24px; }
-    .app-main { padding: 20px; gap: 20px; }
+    .auth-shell { margin: 32px auto 32px; }
+    .app-main { padding: 20px; gap: 20px; overflow-x: hidden; min-width: 0; }
 
+    /* ── Hero ── */
     .hero { min-height: auto; }
+    .hero__inner { padding: 48px 0; }
     .hero h1 { font-size: clamp(2.6rem, 11vw, 3.8rem); }
 
+    /* ── Page intro ── */
+    .page-intro { padding: 28px 0 24px; margin-bottom: 24px; }
+
+    /* ── Stat strip stacks ── */
     .stat-strip { flex-direction: column; }
     .stat-strip__item { border-right: 0; border-bottom: 1px solid var(--rule); }
     .stat-strip__item:last-child { border-bottom: 0; }
 
+    /* ── Misc ── */
     .integrity-grid { grid-template-columns: 1fr; }
     .def-row { grid-template-columns: 1fr; gap: 4px; }
-
     .feature-list__num { font-size: 3.5rem; }
+
+    /* ── Table actions wrap ── */
+    .table-actions { flex-wrap: wrap; }
+
+    /* ── inline-actions: wrap but do NOT force full-width column ── */
+    .inline-actions { flex-wrap: wrap; }
+
+    /* ── Footer colophon: clip overflow ── */
+    .footer-colophon { overflow: hidden; clip: rect(0, 100vw, 100%, 0); }
 }
+
+/* ── Responsive: small phone (480px) ────────────────────── */
+@media (max-width: 480px) {
+    /* Tighten container gutter on tiny screens */
+    :root { --container: min(1180px, calc(100vw - 24px)); }
+
+    /* Further padding reductions */
+    .panel { padding: 16px; }
+    .list-shell, .ledger, .results-strip { padding: 14px 16px; }
+    .app-main { padding: 14px; gap: 16px; }
+    .auth-shell__form { padding: 24px 18px; }
+
+    /* Hide the dark visual panel on tiny screens */
+    .auth-shell__visual { display: none; }
+    .auth-shell { margin: 20px auto 20px; }
+
+    /* Hero padding reduction */
+    .hero__inner { padding: 36px 0; }
+
+    /* Page intro top padding */
+    .page-intro { padding: 20px 0 18px; margin-bottom: 16px; }
+
+    /* cta-split tighter */
+    .cta-split__half { padding: 24px 18px; }
+
+    /* Topbar inner: reduce gap */
+    .topbar__inner { gap: 12px; }
+
+    /* form-grid--inline stacks to column */
+    .form-grid--inline { flex-direction: column; }
+    .form-grid--inline .field { flex: 1 1 auto; }
+}
+
+/* ── Breadcrumb ───────────────────────────────────────────── */
+.breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.82rem;
+    color: var(--ink-3);
+}
+.breadcrumb a { color: var(--ink-3); text-decoration: none; }
+.breadcrumb a:hover { color: var(--ink); text-decoration: underline; }
+.breadcrumb span { color: var(--ink-3); }
+
+/* ── Pagination ───────────────────────────────────────────── */
+.pagination {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    padding: 20px 0 4px;
+}
+.pagination a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 36px;
+    height: 36px;
+    padding: 0 10px;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+    font-size: 0.875rem;
+    color: var(--ink-2);
+    text-decoration: none;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+.pagination a:hover { background: var(--surface-alt); color: var(--ink); }
+.pagination a.is-active { background: var(--accent); color: var(--accent-over); border-color: var(--accent); }
+
+/* ── Inline filter form ───────────────────────────────────── */
+.form-grid--inline {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    align-items: flex-end;
+}
+.form-grid--inline .field { margin: 0; flex: 1 1 180px; }
+.form-grid--inline .field--action { flex: 0 0 auto; display: flex; gap: 8px; align-items: flex-end; }

@@ -37,18 +37,18 @@ $activeSidebar = 'admin-dashboard';
 include dirname(__DIR__) . '/includes/header.php';
 ?>
 <div class="stat-strip">
-    <div class="stat-strip__item">
+    <a class="stat-strip__item" href="<?= e(base_url('/admin/voters.php')); ?>" style="text-decoration:none;color:inherit;">
         <strong><?= e((string) $stats['users']); ?></strong>
         <p>User accounts</p>
-    </div>
-    <div class="stat-strip__item">
+    </a>
+    <a class="stat-strip__item" href="<?= e(base_url('/creator/dashboard.php')); ?>" style="text-decoration:none;color:inherit;">
         <strong><?= e((string) $stats['events']); ?></strong>
         <p>Events</p>
-    </div>
-    <div class="stat-strip__item">
+    </a>
+    <a class="stat-strip__item" href="<?= e(base_url('/events.php')); ?>" style="text-decoration:none;color:inherit;">
         <strong><?= e((string) $stats['pending_verifications']); ?></strong>
         <p>Pending verifications</p>
-    </div>
+    </a>
     <div class="stat-strip__item">
         <strong><?= e((string) $stats['ballots']); ?></strong>
         <p>Recorded ballots</p>
@@ -76,8 +76,11 @@ include dirname(__DIR__) . '/includes/header.php';
                     <td><span class="badge <?= e(badge_class($event['status'])); ?>"><?= e(format_status($event['status'])); ?></span></td>
                     <td><?= e($event['creator_name']); ?></td>
                     <td class="table-actions">
+                        <a href="<?= e(base_url('/event.php?event=' . $event['id'])); ?>">View</a>
                         <a href="<?= e(base_url('/creator/event_form.php?event=' . $event['id'])); ?>">Settings</a>
-                        <a href="<?= e(base_url('/creator/audit_logs.php?event=' . $event['id'])); ?>">Audit</a>
+                        <a href="<?= e(base_url('/creator/verifications.php?event=' . $event['id'])); ?>">Verifications</a>
+                        <a href="<?= e(base_url('/creator/tokens.php?event=' . $event['id'])); ?>">Tokens</a>
+                        <a href="<?= e(base_url('/creator/results.php?event=' . $event['id'])); ?>">Results</a>
                     </td>
                 </tr>
             <?php endforeach; ?>

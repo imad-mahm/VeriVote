@@ -617,7 +617,13 @@ function create_submission_verification_records(int $submissionId, int $eventId,
                 );
 
                 if (!$smsResult['success']) {
-                    throw new RuntimeException('Could not send event SMS verification code.');
+                    log_activity('sms.event_code_send_failed', [
+                        'user_id'         => $account['id'],
+                        'event_id'        => $eventId,
+                        'verification_id' => $verificationId,
+                        'submission_id'   => $submissionId,
+                    ], 'WARN');
+                    // Delivery failure does not block submission. The voter can resend from the status page.
                 }
             } else {
                 send_email_notification(

@@ -157,7 +157,8 @@ if (is_post_request()) {
                     db()->rollBack();
                 }
 
-                flash('error', 'Could not save your registration. ' . $exception->getMessage());
+                log_activity('submission.error', ['message' => $exception->getMessage(), 'event_id' => $eventId, 'user_id' => (int) $user['id']]);
+                flash('error', 'Could not save your registration. Please try again or contact support.');
             }
         } else {
             flash_errors($errors);
@@ -314,10 +315,18 @@ $pageHeading = $event['title'];
 $pageDescription = 'Submit required voter details and track verification progress.';
 $isDashboard = true;
 $sidebarContext = 'voter';
-$activeSidebar = 'voter-dashboard';
+$activeSidebar = '';
 
 include dirname(__DIR__) . '/includes/header.php';
 ?>
+<div class="breadcrumb" style="margin-bottom:16px;">
+    <a href="<?= e(base_url('/events.php')); ?>">Elections</a>
+    <span>&rsaquo;</span>
+    <a href="<?= e(base_url('/event.php?event=' . $eventId)); ?>"><?= e($event['title']); ?></a>
+    <span>&rsaquo;</span>
+    <span>Register</span>
+</div>
+
 <section class="panel">
     <div class="pill-row">
         <span class="badge <?= e(badge_class($event['status'])); ?>"><?= e(format_status($event['status'])); ?></span>
@@ -400,24 +409,24 @@ include dirname(__DIR__) . '/includes/header.php';
         </form>
     </section>
 <?php elseif ($submission): ?>
-    <section class="stats-grid">
-        <article class="stat-box">
+    <div class="stat-strip">
+        <div class="stat-strip__item">
             <strong><?= e((string) ($summary['required_complete'] ?? 0)); ?>/<?= e((string) ($summary['required_total'] ?? 0)); ?></strong>
             <p>Required checks complete</p>
-        </article>
-        <article class="stat-box">
+        </div>
+        <div class="stat-strip__item">
             <strong><?= e((string) ($summary['pending_total'] ?? 0)); ?></strong>
             <p>Pending steps</p>
-        </article>
-        <article class="stat-box">
+        </div>
+        <div class="stat-strip__item">
             <strong><?= e((string) ($summary['rejected_total'] ?? 0)); ?></strong>
             <p>Rejected steps</p>
-        </article>
-        <article class="stat-box">
+        </div>
+        <div class="stat-strip__item">
             <strong><?= $activeToken ? 'Issued' : 'Awaiting'; ?></strong>
             <p>Token status</p>
-        </article>
-    </section>
+        </div>
+    </div>
 
     <section class="grid-2">
         <article class="panel">

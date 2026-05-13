@@ -43,7 +43,7 @@ include dirname(__DIR__) . '/includes/header.php';
 ?>
 <?php if (empty($user['phone_verified_at'])): ?>
     <div class="alert alert--warning">
-        Phone unverified. <a href="<?= e(base_url('/auth/verify-email.php')); ?>" style="color:inherit;text-decoration:underline;">Verify now</a> to unlock event registration.
+        Phone unverified. <a href="<?= e(base_url('/auth/verify-phone.php')); ?>" style="color:inherit;text-decoration:underline;">Verify now</a> to unlock event registration.
     </div>
 <?php endif; ?>
 
@@ -79,7 +79,7 @@ include dirname(__DIR__) . '/includes/header.php';
             </thead>
             <tbody>
                 <?php if (!$submissions): ?>
-                    <tr><td colspan="4" style="color:var(--ink-3);">No event submissions yet. <a href="<?= e(base_url('/events.php')); ?>" style="color:var(--accent);">Browse events</a></td></tr>
+                    <tr><td colspan="4">No event submissions yet. <a href="<?= e(base_url('/events.php')); ?>" class="table-actions" style="display:inline;">Browse elections</a></td></tr>
                 <?php else: ?>
                     <?php foreach ($submissions as $submission): ?>
                         <tr>
@@ -88,8 +88,8 @@ include dirname(__DIR__) . '/includes/header.php';
                                 <p><?= e($submission['submission_reference']); ?></p>
                             </td>
                             <td><span class="badge <?= e(badge_class($submission['status'])); ?>"><?= e(format_status($submission['status'])); ?></span></td>
-                            <td style="color:var(--ink-3);"><?= e(format_datetime($submission['submitted_at'], 'M j, Y')); ?></td>
-                            <td><a href="<?= e(base_url('/voter/register_event.php?event=' . $submission['event_id'])); ?>" style="color:var(--accent);font-size:0.88rem;">Open</a></td>
+                            <td><?= e(format_datetime($submission['submitted_at'], 'M j, Y')); ?></td>
+                            <td class="table-actions"><a href="<?= e(base_url('/voter/register_event.php?event=' . $submission['event_id'])); ?>">Open</a></td>
                         </tr>
                     <?php endforeach; ?>
                 <?php endif; ?>
@@ -139,7 +139,7 @@ include dirname(__DIR__) . '/includes/header.php';
             </thead>
             <tbody>
                 <?php if (!$tokens): ?>
-                    <tr><td colspan="4" style="color:var(--ink-3);">No voting tokens issued yet.</td></tr>
+                    <tr><td colspan="4">No voting tokens issued yet.</td></tr>
                 <?php else: ?>
                     <?php foreach ($tokens as $token): ?>
                         <tr>
@@ -149,7 +149,7 @@ include dirname(__DIR__) . '/includes/header.php';
                             </td>
                             <td><?= e($token['event_title']); ?></td>
                             <td><span class="badge <?= e(badge_class($token['status'])); ?>"><?= e(format_status($token['status'])); ?></span></td>
-                            <td style="color:var(--ink-3); font-size:0.85rem;"><?= e(format_datetime($token['expires_at'], 'M j, Y H:i')); ?></td>
+                            <td><?= e(format_datetime($token['expires_at'], 'M j, Y H:i')); ?></td>
                         </tr>
                     <?php endforeach; ?>
                 <?php endif; ?>
@@ -161,7 +161,7 @@ include dirname(__DIR__) . '/includes/header.php';
         <span class="eyebrow">Notifications</span>
         <h2>Recent messages</h2>
         <?php if (!$notifications): ?>
-            <p style="color:var(--ink-3);font-size:0.88rem;">No notifications found.</p>
+            <p>No notifications found.</p>
         <?php else: ?>
             <?php foreach ($notifications as $notification): ?>
                 <div class="list-row">
