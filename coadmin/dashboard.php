@@ -46,13 +46,16 @@ include dirname(__DIR__) . '/includes/header.php';
             </thead>
             <tbody>
             <?php foreach ($events as $event): ?>
-                <?php $permissions = json_decode((string) ($event['permissions_json'] ?? '{}'), true) ?: []; ?>
+                <?php
+                $permissions = json_decode((string) ($event['permissions_json'] ?? '{}'), true) ?: [];
+                $effStatus   = effective_event_status($event);
+                ?>
                 <tr>
                     <td>
                         <strong><?= e($event['title']); ?></strong>
                         <p><?= e(format_datetime($event['start_at'], 'M j, Y H:i')); ?></p>
                     </td>
-                    <td><span class="badge <?= e(badge_class($event['status'])); ?>"><?= e(format_status($event['status'])); ?></span></td>
+                    <td><span class="badge <?= e(badge_class($effStatus)); ?>"><?= e(format_status($effStatus)); ?></span></td>
                     <td><?= e((string) $event['review_count']); ?> awaiting review</td>
                     <td>
                         <div class="pill-row">

@@ -128,33 +128,41 @@ include dirname(__DIR__) . '/includes/header.php';
 
 <section class="grid-2">
     <article class="table-wrap">
+        <span class="eyebrow" style="padding:12px 16px 0;display:block;">Ballot credentials</span>
         <table>
             <thead>
                 <tr>
-                    <th>Token</th>
                     <th>Event</th>
                     <th>Status</th>
-                    <th>Expiry</th>
+                    <th>Expires</th>
+                    <th>Action</th>
                 </tr>
             </thead>
             <tbody>
                 <?php if (!$tokens): ?>
-                    <tr><td colspan="4">No voting tokens issued yet.</td></tr>
+                    <tr><td colspan="4">No voting tokens issued yet. Tokens are issued by the event creator once your verification is complete.</td></tr>
                 <?php else: ?>
                     <?php foreach ($tokens as $token): ?>
                         <tr>
                             <td>
-                                <strong style="font-family:ui-monospace,monospace;font-size:0.82rem;"><?= e($token['token_reference']); ?></strong>
-                                <p>ends &middot;<?= e($token['token_last4']); ?></p>
+                                <strong><?= e($token['event_title']); ?></strong>
+                                <p style="font-family:ui-monospace,monospace;font-size:0.78rem;">VT-···<?= e($token['token_last4']); ?></p>
                             </td>
-                            <td><?= e($token['event_title']); ?></td>
                             <td><span class="badge <?= e(badge_class($token['status'])); ?>"><?= e(format_status($token['status'])); ?></span></td>
-                            <td><?= e(format_datetime($token['expires_at'], 'M j, Y H:i')); ?></td>
+                            <td style="font-size:0.82rem;"><?= e(format_datetime($token['expires_at'], 'M j, Y H:i')); ?></td>
+                            <td class="table-actions">
+                                <?php if ($token['status'] === 'issued'): ?>
+                                    <a href="<?= e(base_url('/voter/cast_vote.php?event=' . $token['event_id'])); ?>">Vote now</a>
+                                <?php elseif ($token['status'] === 'used'): ?>
+                                    <a href="<?= e(base_url('/voter/verify_vote.php?event=' . $token['event_id'])); ?>">Verify receipt</a>
+                                <?php endif; ?>
+                            </td>
                         </tr>
                     <?php endforeach; ?>
                 <?php endif; ?>
             </tbody>
         </table>
+        <p style="padding:8px 16px 12px;font-size:0.78rem;color:var(--ink-3);">Your full token was delivered by SMS or email at issuance. It cannot be displayed here for security reasons — contact the event creator if you need it reissued.</p>
     </article>
 
     <article class="list-shell">

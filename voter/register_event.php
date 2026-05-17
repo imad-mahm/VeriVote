@@ -329,7 +329,7 @@ include dirname(__DIR__) . '/includes/header.php';
 
 <section class="panel">
     <div class="pill-row">
-        <span class="badge <?= e(badge_class($event['status'])); ?>"><?= e(format_status($event['status'])); ?></span>
+        <span class="badge <?= e(badge_class(effective_event_status($event))); ?>"><?= e(format_status(effective_event_status($event))); ?></span>
         <span class="badge badge-muted"><?= e(format_status($event['verification_policy'])); ?></span>
     </div>
     <h2><?= e($event['title']); ?></h2>

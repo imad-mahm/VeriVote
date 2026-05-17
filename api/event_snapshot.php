@@ -18,7 +18,7 @@ echo json_encode([
     'event' => [
         'id' => $event['id'],
         'title' => $event['title'],
-        'status' => $event['status'],
+        'status' => effective_event_status($event),
     ],
     'results' => compute_event_results($eventId),
     'snapshot' => latest_result_snapshot($eventId),

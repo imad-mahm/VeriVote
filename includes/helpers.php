@@ -157,6 +157,20 @@ function format_datetime(?string $value, string $format = 'M j, Y H:i T'): strin
     return (new DateTimeImmutable($value))->format($format);
 }
 
+function channel_toggle_html(string $default = 'sms'): string
+{
+    $sms   = $default === 'sms'   ? ' checked' : '';
+    $email = $default === 'email' ? ' checked' : '';
+    return '<span class="channel-toggle">'
+        . '<label class="channel-toggle__opt">'
+        . '<input type="radio" name="channel" value="sms"' . $sms . '>'
+        . '<span>SMS</span></label>'
+        . '<label class="channel-toggle__opt">'
+        . '<input type="radio" name="channel" value="email"' . $email . '>'
+        . '<span>Email</span></label>'
+        . '</span>';
+}
+
 function format_status(string $value): string
 {
     return ucwords(str_replace('_', ' ', $value));
@@ -334,13 +348,24 @@ function execute_statement(string $sql, array $params = []): bool
     return $statement->execute($params);
 }
 
+function effective_event_status(array $event): string
+{
+    if ($event['status'] !== 'active') {
+        return $event['status'];
+    }
+    $now = new DateTimeImmutable('now');
+    if ($now < new DateTimeImmutable($event['start_at'])) {
+        return 'scheduled';
+    }
+    if ($now > new DateTimeImmutable($event['end_at'])) {
+        return 'closed';
+    }
+    return 'active';
+}
+
 function event_is_active(array $event): bool
 {
-    $now = new DateTimeImmutable('now');
-    $start = new DateTimeImmutable($event['start_at']);
-    $end = new DateTimeImmutable($event['end_at']);
-
-    return $event['status'] === 'active' && $now >= $start && $now <= $end;
+    return effective_event_status($event) === 'active';
 }
 
 function can_view_public_results(array $event): bool
@@ -350,7 +375,8 @@ function can_view_public_results(array $event): bool
     }
 
     if ($event['result_visibility'] === 'public_after_close') {
-        return in_array($event['status'], ['closed', 'archived'], true);
+        $effective = effective_event_status($event);
+        return in_array($effective, ['closed', 'archived'], true);
     }
 
     return false;
@@ -363,13 +389,21 @@ function can_view_public_audit(array $event): bool
 
 function fetch_public_events(): array
 {
-    return fetch_all(
+    $events = fetch_all(
         'SELECT events.*, users.full_name AS creator_name
          FROM events
          INNER JOIN users ON users.id = events.created_by
          WHERE events.status IN ("scheduled", "active", "closed", "archived")
-         ORDER BY FIELD(events.status, "active", "scheduled", "closed", "archived"), events.start_at ASC'
+         ORDER BY events.start_at ASC'
     );
+
+    $order = ['active' => 0, 'scheduled' => 1, 'closed' => 2, 'archived' => 3];
+    foreach ($events as &$event) {
+        $event['status'] = effective_event_status($event);
+    }
+    unset($event);
+    usort($events, static fn($a, $b) => ($order[$a['status']] ?? 9) <=> ($order[$b['status']] ?? 9));
+    return $events;
 }
 
 function fetch_event_by_id(int $eventId): ?array
@@ -1072,7 +1106,6 @@ function issue_voting_token(int $eventId, int $submissionId, int $issuerId, stri
     }
 
     $rawToken = random_vote_token();
-    $reference = random_reference('TOK');
     $anonymousKey = hash('sha256', bin2hex(random_bytes(32)));
     $publicTokenHash = hash('sha256', secure_digest('public-token:' . $rawToken));
     $expiresAt = $expiresAt ?: (new DateTimeImmutable('now'))
@@ -1081,10 +1114,10 @@ function issue_voting_token(int $eventId, int $submissionId, int $issuerId, stri
 
     execute_statement(
         'INSERT INTO voting_tokens (
-             event_id, submission_id, issued_by, token_hash, token_reference, token_last4,
+             event_id, submission_id, issued_by, token_hash, token_last4,
              anonymous_ballot_key, public_token_hash, delivery_channel, expires_at
          ) VALUES (
-             :event_id, :submission_id, :issued_by, :token_hash, :token_reference, :token_last4,
+             :event_id, :submission_id, :issued_by, :token_hash, :token_last4,
              :anonymous_ballot_key, :public_token_hash, :delivery_channel, :expires_at
          )',
         [
@@ -1092,7 +1125,6 @@ function issue_voting_token(int $eventId, int $submissionId, int $issuerId, stri
             'submission_id' => $submissionId,
             'issued_by' => $issuerId,
             'token_hash' => hash_token_value($rawToken),
-            'token_reference' => $reference,
             'token_last4' => substr($rawToken, -4),
             'anonymous_ballot_key' => $anonymousKey,
             'public_token_hash' => $publicTokenHash,
@@ -1101,99 +1133,74 @@ function issue_voting_token(int $eventId, int $submissionId, int $issuerId, stri
         ]
     );
 
+    $tokenId = (int) db()->lastInsertId();
+
     log_activity('token.issued', [
         'event_id' => $eventId,
         'submission_id' => $submissionId,
         'issuer_user_id' => $issuerId,
-        'token_reference' => $reference,
+        'token_id' => $tokenId,
         'delivery_channel' => $deliveryChannel,
         'expires_at' => $expiresAt,
     ]);
 
     return [
+        'id' => $tokenId,
         'token' => $rawToken,
-        'reference' => $reference,
         'expires_at' => $expiresAt,
     ];
 }
 
-function deliver_voting_token(array $event, array $submission, array $issued): array
+function deliver_voting_token(array $event, array $submission, array $issued, string $preferredChannel = 'sms'): array
 {
-    $smsResult = ['success' => false, 'provider_code' => 'phone_not_verified'];
-    $message = sms_token_delivery_message((string) $issued['token'], (string) $event['title'], (string) $issued['expires_at']);
-    $subject = 'Your Verivote voting token';
+    $subject    = 'Your Verivote voting token';
+    $emailBody  = 'Your voting token for "' . $event['title'] . '" is ' . $issued['token'] . '. It expires at ' . $issued['expires_at'] . '.';
+    $smsMessage = sms_token_delivery_message((string) $issued['token'], (string) $event['title'], (string) $issued['expires_at']);
+    $meta       = ['token_id' => (int) $issued['id'], 'submission_id' => (int) $submission['id'], 'delivery_purpose' => 'voting_token'];
 
+    if ($preferredChannel === 'email') {
+        if (!empty($submission['email'])) {
+            send_email_notification(
+                (int) $submission['user_id'], (int) $event['id'],
+                (string) $submission['email'], $subject, $emailBody,
+                (string) $issued['token'], $meta
+            );
+            execute_statement('UPDATE voting_tokens SET delivery_channel = "email" WHERE id = :id', ['id' => $issued['id']]);
+            return ['success' => true, 'channel' => 'email', 'fallback_used' => false];
+        }
+        execute_statement('UPDATE voting_tokens SET delivery_channel = "email" WHERE id = :id', ['id' => $issued['id']]);
+        return ['success' => false, 'channel' => 'email', 'fallback_used' => false];
+    }
+
+    // SMS preferred
+    $smsResult = ['success' => false, 'provider_code' => 'phone_not_verified'];
     if (!empty($submission['phone']) && !empty($submission['phone_verified_at'])) {
         $smsResult = send_sms_notification(
-            (int) $submission['user_id'],
-            (int) $event['id'],
-            (string) $submission['phone'],
-            $subject,
-            $message,
-            (string) $issued['token'],
-            [
-                'token_reference' => (string) $issued['reference'],
-                'submission_id' => (int) $submission['id'],
-                'delivery_purpose' => 'voting_token',
-            ]
+            (int) $submission['user_id'], (int) $event['id'],
+            (string) $submission['phone'], $subject, $smsMessage,
+            (string) $issued['token'], $meta
         );
     }
 
     if (!empty($smsResult['success'])) {
-        execute_statement(
-            'UPDATE voting_tokens SET delivery_channel = "sms" WHERE token_reference = :token_reference',
-            ['token_reference' => $issued['reference']]
-        );
-
-        return [
-            'success' => true,
-            'channel' => 'sms',
-            'fallback_used' => false,
-            'sms' => $smsResult,
-        ];
+        execute_statement('UPDATE voting_tokens SET delivery_channel = "sms" WHERE id = :id', ['id' => $issued['id']]);
+        return ['success' => true, 'channel' => 'sms', 'fallback_used' => false];
     }
 
-    $fallbackEnabled = (bool) app_config('sms.fallback_to_email', true);
-    if ($fallbackEnabled && !empty($submission['email'])) {
+    // SMS failed — fall back to email if enabled
+    if ((bool) app_config('sms.fallback_to_email', true) && !empty($submission['email'])) {
         send_email_notification(
-            (int) $submission['user_id'],
-            (int) $event['id'],
-            (string) $submission['email'],
-            $subject,
-            'Your voting token for "' . $event['title'] . '" is ' . $issued['token'] . '. It expires at ' . $issued['expires_at'] . '.',
+            (int) $submission['user_id'], (int) $event['id'],
+            (string) $submission['email'], $subject, $emailBody,
             (string) $issued['token'],
-            [
-                'token_reference' => (string) $issued['reference'],
-                'delivery_purpose' => 'voting_token',
-                'fallback_from_sms' => true,
-                'sms_provider_code' => $smsResult['provider_code'] ?? null,
-            ]
+            array_merge($meta, ['fallback_from_sms' => true, 'sms_provider_code' => $smsResult['provider_code'] ?? null])
         );
-
-        execute_statement(
-            'UPDATE voting_tokens SET delivery_channel = "email" WHERE token_reference = :token_reference',
-            ['token_reference' => $issued['reference']]
-        );
-
-        return [
-            'success' => true,
-            'channel' => 'email',
-            'fallback_used' => true,
-            'sms' => $smsResult,
-        ];
+        execute_statement('UPDATE voting_tokens SET delivery_channel = "email" WHERE id = :id', ['id' => $issued['id']]);
+        return ['success' => true, 'channel' => 'email', 'fallback_used' => true];
     }
 
-    execute_statement(
-        'UPDATE voting_tokens SET delivery_channel = "sms" WHERE token_reference = :token_reference',
-        ['token_reference' => $issued['reference']]
-    );
-
-    return [
-        'success' => false,
-        'channel' => 'sms',
-        'fallback_used' => false,
-        'sms' => $smsResult,
-    ];
+    execute_statement('UPDATE voting_tokens SET delivery_channel = "sms" WHERE id = :id', ['id' => $issued['id']]);
+    return ['success' => false, 'channel' => 'sms', 'fallback_used' => false];
 }
 
 function send_account_phone_verification_code(array $user): array

@@ -7,8 +7,11 @@ $pageTitle       = 'Secure Verifiable Online Voting';
 $pageDescription = 'Verivote delivers secure, privacy-preserving, verifiable online voting for serious election workflows.';
 $activeNav       = 'home';
 
-$events       = fetch_public_events();
-$featuredEvents = array_slice($events, 0, 4);
+$events         = fetch_public_events();
+$featuredEvents = array_slice(
+    array_filter($events, fn($e) => $e['status'] === 'active'),
+    0, 4
+);
 
 include __DIR__ . '/includes/header.php';
 ?>

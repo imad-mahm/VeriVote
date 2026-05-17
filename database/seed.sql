@@ -60,6 +60,15 @@ INSERT INTO events (
         'Closed sample event used for public result verification.',
         'This event is retained for analytics and audit demonstrations.',
         NOW(), NOW()
+    ),
+    (
+        3, 2, '2026 Student Council Leadership Election', '2026-student-council-leadership-election',
+        'Open election for the LAU Student Council executive positions. All registered students are eligible to participate after completing identity verification.',
+        'single_choice', 'active', '2026-05-01 08:00:00', '2026-06-11 23:59:00', 'UTC',
+        'public_live', 1, 1, 1, 1, 'all_required',
+        'Voters must submit a valid student ID document. Results are published in real time.',
+        'Receipts are available immediately after voting. The public audit trail updates after each ballot.',
+        NOW(), NOW()
     )
 ON DUPLICATE KEY UPDATE
     title = VALUES(title),
@@ -72,21 +81,22 @@ ON DUPLICATE KEY UPDATE
 
 INSERT INTO event_admins (event_id, user_id, assignment_type, permissions_json) VALUES
     (1, 2, 'owner', JSON_OBJECT('manage_event', true, 'manage_candidates', true, 'manage_fields', true, 'review_verifications', true, 'issue_tokens', true, 'view_results', true)),
-    (2, 2, 'owner', JSON_OBJECT('manage_event', true, 'manage_candidates', true, 'manage_fields', true, 'review_verifications', true, 'issue_tokens', true, 'view_results', true))
+    (2, 2, 'owner', JSON_OBJECT('manage_event', true, 'manage_candidates', true, 'manage_fields', true, 'review_verifications', true, 'issue_tokens', true, 'view_results', true)),
+    (3, 2, 'owner', JSON_OBJECT('manage_event', true, 'manage_candidates', true, 'manage_fields', true, 'review_verifications', true, 'issue_tokens', true, 'view_results', true))
 ON DUPLICATE KEY UPDATE
     assignment_type = VALUES(assignment_type),
     permissions_json = VALUES(permissions_json);
 
 INSERT INTO co_admins (event_id, user_id, assigned_by, permissions_json, is_active) VALUES
-    (1, 3, 2, JSON_OBJECT('review_verifications', true, 'manage_candidates', false, 'issue_tokens', true, 'view_results', true), 1)
+    (1, 3, 2, JSON_OBJECT('review_verifications', true, 'manage_candidates', false, 'issue_tokens', true, 'view_results', true), 1),
+    (3, 3, 2, JSON_OBJECT('review_verifications', true, 'manage_candidates', false, 'issue_tokens', true, 'view_results', true), 1)
 ON DUPLICATE KEY UPDATE
     permissions_json = VALUES(permissions_json),
     is_active = VALUES(is_active);
 
-INSERT INTO verifiers (event_id, user_id, verifier_type, assigned_by, is_active) VALUES
-    (1, 4, 'mo5tar', 2, 1)
+INSERT INTO verifiers (event_id, user_id, assigned_by, is_active) VALUES
+    (1, 4, 2, 1)
 ON DUPLICATE KEY UPDATE
-    verifier_type = VALUES(verifier_type),
     is_active = VALUES(is_active);
 
 INSERT INTO candidates_or_options (id, event_id, option_label, option_description, display_order, is_active) VALUES
@@ -94,7 +104,10 @@ INSERT INTO candidates_or_options (id, event_id, option_label, option_descriptio
     (2, 1, 'Daniel Noor', 'Security policy candidate prioritising public verification standards.', 2, 1),
     (3, 1, 'Lina Haddad', 'Governance candidate focused on turnout integrity and auditability.', 3, 1),
     (4, 2, 'Approve Referendum', 'Approve the oversight board charter.', 1, 1),
-    (5, 2, 'Reject Referendum', 'Reject the oversight board charter.', 2, 1)
+    (5, 2, 'Reject Referendum', 'Reject the oversight board charter.', 2, 1),
+    (6, 3, 'Sara Khalil', 'Third-year engineering student running on a platform of academic transparency and student welfare.', 1, 1),
+    (7, 3, 'Omar Faris', 'Business student advocating for expanded campus services and inter-faculty collaboration.', 2, 1),
+    (8, 3, 'Maya Nassar', 'Computer science student focused on digital student services and sustainability initiatives.', 3, 1)
 ON DUPLICATE KEY UPDATE
     option_label = VALUES(option_label),
     option_description = VALUES(option_description),
@@ -111,7 +124,12 @@ INSERT INTO event_required_fields (
     (1, 'date_of_birth', 'Date of Birth', 'date', NULL, 'Used for eligibility checks.', NULL, NULL, 1, 1, 4),
     (1, 'passport_number', 'Passport Number', 'passport', 'Enter passport number', 'Stored privately and reviewed by event admins.', NULL, JSON_OBJECT('max_length', 40), 1, 1, 5),
     (1, 'id_document', 'Identity Document Upload', 'file', NULL, 'Upload a PNG, JPG, or PDF.', NULL, JSON_OBJECT('mime', JSON_ARRAY('image/jpeg', 'image/png', 'application/pdf')), 1, 0, 6),
-    (1, 'residency_note', 'Residency Note', 'textarea', 'Optional context for regional eligibility', 'Optional free-text context for reviewers.', NULL, JSON_OBJECT('max_length', 500), 0, 0, 7)
+    (1, 'residency_note', 'Residency Note', 'textarea', 'Optional context for regional eligibility', 'Optional free-text context for reviewers.', NULL, JSON_OBJECT('max_length', 500), 0, 0, 7),
+    (3, 'full_name', 'Full Name', 'text', 'Enter your legal full name', 'Must match your student ID.', NULL, JSON_OBJECT('min_length', 3), 1, 1, 1),
+    (3, 'email', 'Email Address', 'email', 'name@lau.edu.lb', 'Use your university email address.', NULL, JSON_OBJECT('format', 'email'), 1, 1, 2),
+    (3, 'phone', 'Phone Number', 'phone', '+961 71 000 000', 'Used for SMS verification.', NULL, JSON_OBJECT('format', 'phone'), 1, 1, 3),
+    (3, 'date_of_birth', 'Date of Birth', 'date', NULL, 'Used for eligibility checks.', NULL, NULL, 1, 1, 4),
+    (3, 'id_document', 'Student ID Document', 'file', NULL, 'Upload a photo of your LAU student ID card (PNG, JPG, or PDF).', NULL, JSON_OBJECT('mime', JSON_ARRAY('image/jpeg', 'image/png', 'application/pdf')), 1, 0, 5)
 ON DUPLICATE KEY UPDATE
     field_label = VALUES(field_label),
     field_type = VALUES(field_type),
@@ -127,7 +145,10 @@ INSERT INTO verification_methods (
     (1, 'sms_verification', 'SMS Verification', 'A one-time SMS code confirms phone ownership.', 1, 0, 1, JSON_OBJECT('expiry_minutes', 15), 1),
     (1, 'document_review', 'Document Review', 'An event reviewer validates the uploaded document.', 1, 1, 2, JSON_OBJECT('allowed_roles', JSON_ARRAY('event_creator', 'co_admin')), 1),
     (1, 'trusted_verifier', 'Trusted Verifier Approval', 'A Mo5tar or in-person verifier confirms the voter physically.', 1, 1, 3, JSON_OBJECT('allowed_roles', JSON_ARRAY('verifier')), 1),
-    (1, 'manual_review', 'Manual Admin Review', 'Final manual approval before token issuance.', 1, 1, 4, JSON_OBJECT('allowed_roles', JSON_ARRAY('event_creator', 'co_admin')), 1)
+    (1, 'manual_review', 'Manual Admin Review', 'Final manual approval before token issuance.', 1, 1, 4, JSON_OBJECT('allowed_roles', JSON_ARRAY('event_creator', 'co_admin')), 1),
+    (3, 'sms_verification', 'SMS Verification', 'A one-time SMS code confirms phone ownership.', 1, 0, 1, JSON_OBJECT('expiry_minutes', 15), 1),
+    (3, 'document_review', 'Document Review', 'An event reviewer validates the uploaded student ID document.', 1, 1, 2, JSON_OBJECT('allowed_roles', JSON_ARRAY('event_creator', 'co_admin')), 1),
+    (3, 'manual_review', 'Manual Admin Review', 'Final manual approval before token issuance.', 1, 1, 3, JSON_OBJECT('allowed_roles', JSON_ARRAY('event_creator', 'co_admin')), 1)
 ON DUPLICATE KEY UPDATE
     label = VALUES(label),
     description = VALUES(description),

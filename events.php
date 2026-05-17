@@ -45,9 +45,9 @@ include __DIR__ . '/includes/header.php';
                         <a class="button button--primary" href="<?= e(base_url('/event.php?slug=' . urlencode($event['slug']))); ?>">Open</a>
 
                         <?php if ($viewerRole === 'voter'): ?>
-                            <a class="button button--ghost" href="<?= e(base_url('/voter/register_event.php?event=' . $event['id'])); ?>">Register</a>
                             <?php if ($event['status'] === 'active'): ?>
-                                <a class="button button--ghost" href="<?= e(base_url('/voter/cast_vote.php?event=' . $event['id'])); ?>">Vote</a>
+                            <a class="button button--ghost" href="<?= e(base_url('/voter/register_event.php?event=' . $event['id'])); ?>">Register</a>
+                            <a class="button button--ghost" href="<?= e(base_url('/voter/cast_vote.php?event=' . $event['id'])); ?>">Vote</a>
                             <?php endif; ?>
                         <?php elseif (in_array($viewerRole, ['event_creator', 'super_admin'], true)): ?>
                             <a class="button button--ghost" href="<?= e(base_url('/creator/event_form.php?event=' . $event['id'])); ?>">Manage</a>

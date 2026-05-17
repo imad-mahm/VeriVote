@@ -18,30 +18,75 @@ if (is_post_request()) {
     $action = (string) ($_POST['action'] ?? '');
     $actor = current_user();
 
+    $channel = in_array($_POST['channel'] ?? '', ['sms', 'email'], true) ? (string) $_POST['channel'] : 'sms';
+
     if ($action === 'issue') {
         $submissionId = (int) ($_POST['submission_id'] ?? 0);
         $submission = fetch_submission_by_id($submissionId);
 
         if ($submission && $submission['status'] === 'approved') {
             try {
-                $issued = issue_voting_token($eventId, $submissionId, (int) $actor['id'], 'sms');
-                $delivery = deliver_voting_token($event, $submission, $issued);
-                write_audit_log('token_issued', 'voting_tokens', $issued['reference'], 'Voting token issued.', $eventId, [
+                $issued = issue_voting_token($eventId, $submissionId, (int) $actor['id'], $channel);
+                $delivery = deliver_voting_token($event, $submission, $issued, $channel);
+                write_audit_log('token_issued', 'voting_tokens', (string) $issued['id'], 'Voting token issued.', $eventId, [
                     'submission_id' => $submissionId,
                     'delivery_channel' => $delivery['channel'],
                     'fallback_used' => $delivery['fallback_used'],
                 ]);
 
                 if (!$delivery['success']) {
-                    flash('error', 'Token issued but delivery failed — the voter did not receive it via SMS or email. Reference: ' . $issued['reference']);
+                    flash('warning', 'Token created for ' . $submission['submission_reference'] . ' but could not be delivered via SMS or email. The voter will need a reissue when delivery is working.');
                 } else {
                     $channelLabel = $delivery['fallback_used'] ? 'email fallback' : 'SMS';
-                    flash('success', 'Token issued and delivered via ' . $channelLabel . '. Reference: ' . $issued['reference']);
+                    flash('success', 'Token issued and delivered via ' . $channelLabel . ' to ' . $submission['submission_reference'] . '.');
                 }
             } catch (Throwable $exception) {
                 log_activity('token.issue_error', ['event_id' => $eventId, 'submission_id' => $submissionId, 'error' => $exception->getMessage()], 'ERROR');
-                flash('error', 'Could not issue token. Please try again.');
+                flash('error', 'Could not issue token — ' . $exception->getMessage());
             }
+        }
+    }
+
+    if ($action === 'issue_all') {
+        $pending = fetch_all(
+            'SELECT ves.*, users.full_name, users.email, users.phone, users.phone_verified_at
+             FROM voter_event_submissions ves
+             INNER JOIN users ON users.id = ves.user_id
+             WHERE ves.event_id = :event_id AND ves.status = "approved"',
+            ['event_id' => $eventId]
+        );
+
+        $issued_count = 0;
+        $failed_count = 0;
+        $skipped_count = 0;
+
+        foreach ($pending as $submission) {
+            if (active_token_for_submission((int) $submission['id'])) {
+                $skipped_count++;
+                continue;
+            }
+            try {
+                $issued = issue_voting_token($eventId, (int) $submission['id'], (int) $actor['id'], $channel);
+                deliver_voting_token($event, $submission, $issued, $channel);
+                write_audit_log('token_issued', 'voting_tokens', (string) $issued['id'], 'Voting token issued (bulk).', $eventId, [
+                    'submission_id' => $submission['id'],
+                ]);
+                $issued_count++;
+            } catch (Throwable $exception) {
+                log_activity('token.issue_error', ['event_id' => $eventId, 'submission_id' => $submission['id'], 'error' => $exception->getMessage()], 'ERROR');
+                $failed_count++;
+            }
+        }
+
+        $parts = [];
+        if ($issued_count > 0) $parts[] = $issued_count . ' token' . ($issued_count !== 1 ? 's' : '') . ' issued';
+        if ($skipped_count > 0) $parts[] = $skipped_count . ' already had a token';
+        if ($failed_count > 0)  $parts[] = $failed_count . ' failed';
+
+        if ($failed_count > 0) {
+            flash('warning', implode(', ', $parts) . '. Check the activity log for details.');
+        } else {
+            flash('success', implode(', ', $parts) . '.');
         }
     }
 
@@ -81,10 +126,10 @@ if (is_post_request()) {
                 ]);
 
                 if (!$delivery['success']) {
-                    flash('error', 'Token reissued but delivery failed — the voter did not receive it via SMS or email. Reference: ' . $issued['reference']);
+                    flash('error', 'Token reissued but delivery failed — the voter did not receive it via SMS or email. Submission: ' . ($submission['submission_reference'] ?? ''));
                 } else {
                     $channelLabel = $delivery['fallback_used'] ? 'email fallback' : 'SMS';
-                    flash('success', 'Token reissued and delivered via ' . $channelLabel . '. Reference: ' . $issued['reference']);
+                    flash('success', 'Token reissued and delivered via ' . $channelLabel . ' to ' . ($submission['submission_reference'] ?? '') . '.');
                 }
             } catch (Throwable $exception) {
                 log_activity('token.reissue_error', ['event_id' => $eventId, 'token_id' => $tokenId, 'error' => $exception->getMessage()], 'ERROR');
@@ -122,8 +167,29 @@ $sidebarContext = current_role_slug() ?? 'event_creator';
 $activeEventTool = 'tokens';
 $eventContextId = $eventId;
 
+$pendingIssueCount = count(array_filter($approvedSubmissions, static fn($s) => !active_token_for_submission((int) $s['id'])));
+
 include dirname(__DIR__) . '/includes/header.php';
 ?>
+
+<?php if ($pendingIssueCount > 0): ?>
+<section class="panel" style="margin-bottom:0;">
+    <div class="inline-actions" style="align-items:center;">
+        <div>
+            <strong><?= e((string) $pendingIssueCount); ?> approved voter<?= $pendingIssueCount !== 1 ? 's' : ''; ?> without a token</strong>
+            <p style="font-size:0.85rem;color:var(--ink-3);margin-top:2px;">Issue all at once.</p>
+        </div>
+        <form method="post" style="display:flex;align-items:center;gap:12px;">
+            <?= csrf_field(); ?>
+            <input type="hidden" name="action" value="issue_all">
+            <input type="hidden" name="event_id" value="<?= e((string) $eventId); ?>">
+            <?= channel_toggle_html('sms'); ?>
+            <button class="button button--primary" type="submit">Issue all (<?= e((string) $pendingIssueCount); ?>)</button>
+        </form>
+    </div>
+</section>
+<?php endif; ?>
+
 <section class="grid-2">
     <article class="table-wrap">
         <table>
@@ -145,12 +211,13 @@ include dirname(__DIR__) . '/includes/header.php';
                     <td><span class="badge <?= active_token_for_submission((int) $submission['id']) ? 'badge-success' : 'badge-muted'; ?>"><?= active_token_for_submission((int) $submission['id']) ? 'Token issued' : 'Ready'; ?></span></td>
                     <td>
                         <?php if (!active_token_for_submission((int) $submission['id'])): ?>
-                            <form method="post">
+                            <form method="post" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
                                 <?= csrf_field(); ?>
                                 <input type="hidden" name="action" value="issue">
                                 <input type="hidden" name="event_id" value="<?= e((string) $eventId); ?>">
                                 <input type="hidden" name="submission_id" value="<?= e((string) $submission['id']); ?>">
-                                <button class="button button--primary" type="submit">Issue token</button>
+                                <?= channel_toggle_html('sms'); ?>
+                                <button class="button button--primary" type="submit">Issue</button>
                             </form>
                         <?php else: ?>
                             <span class="badge badge-success">Active token exists</span>
@@ -166,7 +233,6 @@ include dirname(__DIR__) . '/includes/header.php';
         <table>
             <thead>
             <tr>
-                <th>Reference</th>
                 <th>Voter</th>
                 <th>Status</th>
                 <th>Expiry</th>
@@ -176,10 +242,6 @@ include dirname(__DIR__) . '/includes/header.php';
             <tbody>
             <?php foreach ($tokens as $token): ?>
                 <tr>
-                    <td>
-                        <strong><?= e($token['token_reference']); ?></strong>
-                        <p>Ends with <?= e($token['token_last4']); ?></p>
-                    </td>
                     <td>
                         <strong><?= e($token['full_name']); ?></strong>
                         <p><?= e($token['submission_reference']); ?></p>

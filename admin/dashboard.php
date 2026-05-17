@@ -68,12 +68,13 @@ include dirname(__DIR__) . '/includes/header.php';
             </thead>
             <tbody>
             <?php foreach ($recentEvents as $event): ?>
+                <?php $effStatus = effective_event_status($event); ?>
                 <tr>
                     <td>
                         <strong><?= e($event['title']); ?></strong>
                         <p><?= e(format_datetime($event['start_at'], 'M j, Y H:i')); ?></p>
                     </td>
-                    <td><span class="badge <?= e(badge_class($event['status'])); ?>"><?= e(format_status($event['status'])); ?></span></td>
+                    <td><span class="badge <?= e(badge_class($effStatus)); ?>"><?= e(format_status($effStatus)); ?></span></td>
                     <td><?= e($event['creator_name']); ?></td>
                     <td class="table-actions">
                         <a href="<?= e(base_url('/event.php?event=' . $event['id'])); ?>">View</a>

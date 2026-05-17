@@ -89,7 +89,9 @@ include dirname(__DIR__) . '/includes/header.php';
             <?php else: ?>
                 <?php foreach ($events as $event): ?>
                     <?php
-                    $isReady = (int) $event['candidate_count'] >= 2
+                    $effStatus = effective_event_status($event);
+                    $isClosed  = in_array($effStatus, ['closed', 'archived'], true);
+                    $isReady   = (int) $event['candidate_count'] >= 2
                         && (int) $event['field_count'] > 0
                         && (int) $event['verification_method_count'] > 0;
                     ?>
@@ -98,10 +100,14 @@ include dirname(__DIR__) . '/includes/header.php';
                             <strong><?= e($event['title']); ?></strong>
                             <p><?= e(format_datetime($event['start_at'], 'M j, Y H:i')); ?> to <?= e(format_datetime($event['end_at'], 'M j, Y H:i')); ?></p>
                         </td>
-                        <td><span class="badge <?= e(badge_class($event['status'])); ?>"><?= e(format_status($event['status'])); ?></span></td>
+                        <td><span class="badge <?= e(badge_class($effStatus)); ?>"><?= e(format_status($effStatus)); ?></span></td>
                         <td>
                             <div class="pill-row">
-                                <span class="badge <?= $isReady ? 'badge-success' : 'badge-warning'; ?>"><?= $isReady ? 'Ready' : 'Incomplete'; ?></span>
+                                <?php if ($isClosed): ?>
+                                    <span class="badge badge-muted">Ended</span>
+                                <?php else: ?>
+                                    <span class="badge <?= $isReady ? 'badge-success' : 'badge-warning'; ?>"><?= $isReady ? 'Ready' : 'Incomplete'; ?></span>
+                                <?php endif; ?>
                                 <span class="badge badge-muted"><?= e((string) $event['candidate_count']); ?> candidates</span>
                                 <span class="badge badge-muted"><?= e((string) $event['field_count']); ?> fields</span>
                                 <span class="badge badge-muted"><?= e((string) $event['verification_method_count']); ?> methods</span>

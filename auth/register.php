@@ -169,7 +169,6 @@ include dirname(__DIR__) . '/includes/header.php';
                 <label for="password">Password</label>
                 <input id="password" type="password" name="password"
                        autocomplete="new-password" required>
-                <span class="helper-text"><?= e(implode(', ', $passwordHints)); ?>.</span>
             </div>
 
             <div class="field">
@@ -177,6 +176,7 @@ include dirname(__DIR__) . '/includes/header.php';
                 <input id="password_confirmation" type="password" name="password_confirmation"
                        autocomplete="new-password" required>
             </div>
+                <span class="helper-text"><?= e(implode(', ', $passwordHints)); ?>.</span>
 
             <div class="field field--full">
                 <button class="button button--primary" type="submit">Create account &rarr;</button>

@@ -94,14 +94,26 @@ include __DIR__ . '/includes/header.php';
     </section>
 
     <?php if ($snapshot): ?>
+    <?php $snapshotData = json_decode((string) $snapshot['snapshot_json'], true) ?? []; ?>
     <section class="section" data-reveal>
-        <article class="ledger">
-            <span class="eyebrow">Integrity snapshot</span>
-            <h2 style="margin-top:-4px;">Latest published checkpoint</h2>
-            <pre><?= e($snapshot['snapshot_json']); ?></pre>
-            <div class="pill-row" style="padding-top:4px;">
-                <span class="badge badge-muted" style="font-family:ui-monospace,monospace;font-size:0.72rem;">SHA <?= e(substr($snapshot['integrity_hash'], 0, 20)); ?>...</span>
-                <span class="badge badge-muted"><?= e(format_datetime($snapshot['created_at'])); ?></span>
+        <article class="panel">
+            <span class="eyebrow">Result seal — <?= e(format_datetime($snapshot['created_at'])); ?></span>
+            <h2 style="margin-top:4px;">Verified snapshot</h2>
+            <p style="margin-top:6px; font-size:0.88rem; color:var(--ink-2);">These counts were sealed at election close. The seal below proves this table has not been altered since it was published.</p>
+            <div class="list-shell list-shell--bare" style="margin-top:14px;">
+                <?php foreach ($snapshotData as $option => $data): ?>
+                    <div class="list-row">
+                        <div>
+                            <strong><?= e($option); ?></strong>
+                            <p style="font-size:0.82rem;"><?= e((string) ($data['votes'] ?? 0)); ?> vote<?= ($data['votes'] ?? 0) !== 1 ? 's' : ''; ?></p>
+                        </div>
+                        <strong style="font-size:1rem;"><?= e(number_format((float) ($data['percentage'] ?? 0), 2)); ?>%</strong>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+            <div style="margin-top:16px; padding-top:12px; border-top:1px solid var(--rule-soft);">
+                <p style="font-size:0.75rem; color:var(--ink-3); text-transform:uppercase; letter-spacing:.05em;">SHA-256 seal</p>
+                <p style="font-family:ui-monospace,monospace;font-size:0.74rem;word-break:break-all;margin-top:4px;"><?= e($snapshot['integrity_hash']); ?></p>
             </div>
         </article>
     </section>

@@ -189,7 +189,6 @@ if (is_post_request()) {
 
     if ($event && $action === 'assign_verifier') {
         $verifierUserId = (int) ($_POST['user_id'] ?? 0);
-        $verifierType = (string) ($_POST['verifier_type'] ?? 'in_person');
         $assignee = fetch_one(
             'SELECT users.id
              FROM users
@@ -204,18 +203,17 @@ if (is_post_request()) {
         }
 
         execute_statement(
-            'INSERT INTO verifiers (event_id, user_id, verifier_type, assigned_by, is_active)
-             VALUES (:event_id, :user_id, :verifier_type, :assigned_by, 1)
-             ON DUPLICATE KEY UPDATE verifier_type = VALUES(verifier_type), is_active = 1, assigned_by = VALUES(assigned_by)',
+            'INSERT INTO verifiers (event_id, user_id, assigned_by, is_active)
+             VALUES (:event_id, :user_id, :assigned_by, 1)
+             ON DUPLICATE KEY UPDATE is_active = 1, assigned_by = VALUES(assigned_by)',
             [
                 'event_id' => $event['id'],
                 'user_id' => $verifierUserId,
-                'verifier_type' => $verifierType,
                 'assigned_by' => $user['id'],
             ]
         );
 
-        write_audit_log('verifier_assigned', 'verifiers', (string) $verifierUserId, 'Verifier assigned to event.', $event['id'], ['verifier_type' => $verifierType]);
+        write_audit_log('verifier_assigned', 'verifiers', (string) $verifierUserId, 'Verifier assigned to event.', $event['id']);
         flash('success', 'Verifier assignment saved.');
         redirect('/creator/event_form.php?event=' . $event['id']);
     }
@@ -467,14 +465,6 @@ include dirname(__DIR__) . '/includes/header.php';
                         <?php endforeach; ?>
                     </select>
                 </div>
-                <div class="field">
-                    <label for="verifier_type">Verifier type</label>
-                    <select id="verifier_type" name="verifier_type">
-                        <option value="mo5tar">Mo5tar / trusted verifier</option>
-                        <option value="manual">Manual verifier</option>
-                        <option value="in_person">In-person verifier</option>
-                    </select>
-                </div>
                 <button class="button button--primary" type="submit">Assign verifier</button>
             </form>
             <div class="list-shell">
@@ -482,7 +472,7 @@ include dirname(__DIR__) . '/includes/header.php';
                     <div class="list-row">
                         <div>
                             <strong><?= e($assignment['full_name']); ?></strong>
-                            <p><?= e(format_status($assignment['verifier_type'])); ?></p>
+                            <p><?= e($assignment['email']); ?></p>
                         </div>
                         <div class="table-actions">
                             <span class="badge <?= $assignment['is_active'] ? 'badge-success' : 'badge-muted'; ?>"><?= $assignment['is_active'] ? 'Active' : 'Inactive'; ?></span>

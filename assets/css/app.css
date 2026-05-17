@@ -619,6 +619,56 @@ input[type="checkbox"]:focus-visible {
 .flash-stack { display: grid; gap: 10px; margin-bottom: 24px; }
 .flash-stack--public { margin-top: 24px; }
 
+/* ── Channel toggle (SMS / Email) ───────────────────────── */
+.channel-toggle {
+    display: inline-flex;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.channel-toggle__opt {
+    display: flex;
+    cursor: pointer;
+    position: relative;
+}
+
+.channel-toggle__opt input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+    width: 0;
+    height: 0;
+}
+
+.channel-toggle__opt span {
+    display: block;
+    padding: 5px 14px;
+    font-size: 0.78rem;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    color: var(--ink-3);
+    background: var(--surface);
+    border-left: 1px solid var(--rule);
+    transition: background 0.12s, color 0.12s;
+    user-select: none;
+}
+
+.channel-toggle__opt:first-child span { border-left: none; }
+
+.channel-toggle__opt input[type="radio"]:checked + span {
+    background: var(--accent);
+    color: var(--accent-over);
+    border-color: var(--accent);
+}
+
+.channel-toggle__opt:hover span { background: var(--surface-alt); color: var(--ink); }
+.channel-toggle__opt input[type="radio"]:checked:focus-visible + span {
+    outline: 2px solid var(--accent);
+    outline-offset: -2px;
+}
+
 /* ── Badges — rectangular, document authority ────────────── */
 .badge {
     display: inline-flex;
